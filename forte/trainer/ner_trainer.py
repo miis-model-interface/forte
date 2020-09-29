@@ -80,6 +80,8 @@ class CoNLLNERTrainer(BaseTrainer):
         Returns:
 
         """
+        print("resources: ", resources.resources)
+        print("config: ", configs)
         self.resource = resources
 
         self.word_alphabet = resources.get("word_alphabet")

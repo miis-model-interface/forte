@@ -72,6 +72,10 @@ class CoNLLNERPredictor(FixedSizeBatchProcessor):
         return input_info
 
     def initialize(self, resources: Resources, configs: Config):
+        print("==========check config for predictor==========")
+        print(configs)
+        print(type(configs))
+        configs.add_hparam("batcher", configs.config_data)
         super().initialize(resources, configs)
 
         self.resource = resources

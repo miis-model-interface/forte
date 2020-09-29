@@ -123,7 +123,8 @@ class PipelineComponent(Generic[PackType]):
             merged_configs.update(configs)
 
         try:
-            final_configs = Config(merged_configs, cls.default_configs())
+            final_configs = Config(merged_configs, cls.default_configs(),
+                allow_new_hparam = True)
         except ValueError as e:
             raise ProcessorConfigError(
                 f'Configuration error for the processor '

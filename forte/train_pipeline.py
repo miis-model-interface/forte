@@ -76,16 +76,24 @@ class TrainPipeline:
         prepare_pl = Pipeline()
         prepare_pl.set_reader(self.train_reader)
         for p in self.preprocessors:
-            prepare_pl.add(p)
+            prepare_pl.add(p, config=self.configs["preprocessor"])
         prepare_pl.run(self.configs.config_data.train_path)
+        print("=====check prepare_pl=====")
+        print("resources", prepare_pl.resource.resources)
+        self.resource = prepare_pl.resource
 
     def train(self):
         epoch = 0
         while True:
             epoch += 1
+            print("========training=========")
             for pack in self.train_reader.iter(
                     self.configs.config_data.train_path):
+                print("========training pack=======")
+                print("pack", pack)
                 for instance in pack.get_data(**self.trainer.data_request()):
+                    print("======traning instance========")
+                    print("instance", instance)
                     self.trainer.consume(instance)
 
             self.trainer.epoch_finish_action(epoch)

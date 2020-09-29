@@ -61,6 +61,7 @@ class ProcessingBatcher(Generic[PackType]):
         Returns:
 
         """
+        print("get inside!!!")
         self.current_batch.clear()
         self.data_pack_pool.clear()
         self.current_batch_sources.clear()

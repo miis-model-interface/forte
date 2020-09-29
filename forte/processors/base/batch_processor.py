@@ -60,6 +60,8 @@ class BaseBatchProcessor(BaseProcessor[PackType], ABC):
 
         assert configs is not None
         try:
+            print("=======check batch processor========")
+            print("config: ", configs)
             self.batcher.initialize(configs.batcher)
         except AttributeError as e:
             raise ProcessorConfigError(
