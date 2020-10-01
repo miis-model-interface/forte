@@ -18,23 +18,23 @@ import torch
 from forte.common.resources import Resources
 from forte.common.configuration import Config
 
+
 class Converter():
     """ Base class.
     """
-    def __init__():
+
+    def __init__(self):
         pass
 
     @abstractmethod
     def initialize(self, resources: Resources, configs: Config):
         # TODO: self.vocab = resource["vocab"]
         pass
-    
+
     @abstractmethod
-    def pack2tensor(self, instance:List)->torch.Tensor:
+    def pack2tensor(self, instance: List) -> torch.Tensor:
         pass
 
     @abstractmethod
-    def tensor2pack(self, tensor:torch.Tensor)->List:
+    def tensor2pack(self, tensor: torch.Tensor) -> List:
         pass
-
-    
