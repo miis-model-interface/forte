@@ -15,7 +15,7 @@ from typing import Dict
 
 
 class ConverterContainer():
-    def __init__(self, converter_request: Dict):
+    def __init__(self, converter_map: Dict):
         # converter_map format:
         # {
         #    "Token": {
@@ -23,9 +23,7 @@ class ConverterContainer():
         #        "text": [DenseConverter, CharConverter]
         #    }
         # }
-        # TODO
-        self.converter_map: Dict = {}
-        pass
+        self.converter_map: Dict = converter_map
 
     def consume(self, instance: Dict) -> Dict:
         # Consume should output tensor container, the format is:
