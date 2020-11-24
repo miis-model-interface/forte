@@ -16,7 +16,7 @@ from typing import List, Tuple, Any, Optional
 import torch
 from torch import Tensor
 
-from forte.data.extractor.feature import Feature
+from forte.data.converter.feature import Feature
 
 
 class Converter:

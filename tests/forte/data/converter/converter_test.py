@@ -17,8 +17,8 @@ from typing import List
 
 import torch
 
-from forte.data.extractor.converter import Converter
-from forte.data.extractor.feature import Feature
+from forte.data.converter.converter import Converter
+from forte.data.converter.feature import Feature
 
 
 class ConverterTest(unittest.TestCase):
