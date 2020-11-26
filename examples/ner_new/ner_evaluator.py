@@ -17,7 +17,6 @@ from pathlib import Path
 
 from forte.data.data_pack import DataPack
 from forte.evaluation.base import Evaluator
-from forte.processors.ner_predictor import CoNLLNERPredictor
 from forte.data.extractor.utils import bio_tagging
 from ft.onto.base_ontology import Sentence, Token, EntityMention
 
@@ -60,7 +59,7 @@ def _write_tokens_to_file(pred_pack, pred_request,
 class CoNLLNEREvaluator(Evaluator):
     def __init__(self):
         super().__init__()
-        self.test_component = CoNLLNERPredictor().name
+        # self.test_component = CoNLLNERPredictor().name
         self.output_file = "tmp_eval.txt"
         self.score_file = "tmp_eval.score"
         self.scores = {}

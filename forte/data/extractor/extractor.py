@@ -18,7 +18,7 @@ from ft.onto.base_ontology import Annotation, EntityMention
 from forte.common.configuration import Config
 from forte.data.data_pack import DataPack
 from forte.data.extractor.vocabulary import Vocabulary
-from forte.data.extractor.feature import Feature
+from forte.data.converter.feature import Feature
 from forte.data.extractor.utils import bio_tagging
 
 
@@ -195,7 +195,11 @@ class CharExtractor(BaseExtractor):
 
 
 class BioSeqTaggingExtractor(BaseExtractor):
-
+    '''This class will create a BIO tagging sequence for the attribute of
+    the entry_type. E.g. the ner_type of EntityMention in a Sentence. The
+    extracted sequence length will be the same as the based_on Annotation.
+    E.g. the Token text of a Sentence.
+    '''
     def __init__(self, config: Union[Dict, Config]):
         super().__init__(config)
         defaults = {

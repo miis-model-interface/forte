@@ -16,7 +16,7 @@ import yaml
 import torch
 from forte.pipeline import Pipeline
 from forte.data.readers.conll03_reader_new import CoNLL03Reader
-from forte.data.extractor.predictor import Predictor
+from forte.predictor import Predictor
 from ft.onto.base_ontology import Sentence, EntityMention
 from examples.ner_new.ner_evaluator import CoNLLNEREvaluator
 
@@ -32,17 +32,24 @@ config_predict = yaml.safe_load(open("configs/config_predict.yml", "r"))
 model = torch.load(config_predict['model_path'])
 train_state = torch.load(config_predict['train_state_path'])
 
-pl = Pipeline()
-pl.set_reader(CoNLL03Reader())
-pl.add(Predictor(batch_size=config_predict['batch_size'],
+
+reader = CoNLL03Reader()
+predictor = Predictor(batch_size=config_predict['batch_size'],
                 model = model,
                 predict_forward_fn = predict_forward_fn,
-                feature_resource = train_state['feature_resource']))
-pl.add(CoNLLNEREvaluator())
+                feature_resource = train_state['feature_resource'])
+evaluator = CoNLLNEREvaluator()
+
+
+pl = Pipeline()
+pl.set_reader(reader)
+pl.add(predictor)
+pl.add(evaluator)
 pl.initialize()
 
 
 for pack in pl.process_dataset(config_predict['test_path']):
+    print("---- pack ----")
     for instance in pack.get(Sentence):
         sent = instance.text
         ner_tags = []
@@ -51,3 +58,4 @@ for pack in pl.process_dataset(config_predict['test_path']):
         print('---- example -----')
         print("sentence: ", sent)
         print("ner_tags: ", ner_tags)
+    print(evaluator.get_result())
