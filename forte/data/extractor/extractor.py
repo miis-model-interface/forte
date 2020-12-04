@@ -17,7 +17,7 @@ import torch
 from typing import Dict, Any, Union, Iterable, Type
 from ft.onto.base_ontology import Annotation, EntityMention
 from forte.common.configuration import Config
-from forte.data.data_pack import DataPack
+from forte.data.data_pack import DataPack, DataIndex
 from forte.data.extractor.vocabulary import Vocabulary
 from forte.data.converter.feature import Feature
 from forte.data.extractor.utils import bio_tagging
@@ -58,6 +58,7 @@ class BaseExtractor(ABC):
 
         if self.config.vocab_predefined is not None:
             self.predefined_vocab(self.config.vocab_predefined)
+
 
     @property
     def entry_type(self) -> Type[Annotation]:
@@ -129,7 +130,8 @@ class BaseExtractor(ABC):
         set to the vocab. Different extractor might have different strategies
         to add these elements.
         '''
-        raise NotImplementedError()
+        for element in predefined:
+            self.add(predefined)
 
     def update_vocab(self, pack: DataPack, instance: Annotation):
         '''This function is used when user want to add element to vocabulary
@@ -343,3 +345,56 @@ class BioSeqTaggingExtractor(BaseExtractor):
         if tag_type:
             entity_mention = EntityMention(pack, tag_start, tag_end)
             entity_mention.ner_type = tag_type
+
+
+class LinkExtractor(BaseExtractor):
+    def __init__(self, config: Union[Dict, Config]):
+        super().__init__(config)
+        defaults = {
+            "attribute": None,
+            "based_on": None
+        }
+        self.config = Config(self.config,
+                                default_hparams = defaults,
+                                allow_new_hparam = True)
+
+    def update_vocab(self, pack: DataPack, instance: Annotation):
+        for entry in pack.get(self.config.entry_type, instance):
+            attribute = getattr(entry, self.config.attribute)
+            self.add(attribute)
+
+    def extract(self, pack: DataPack, instance: Annotation) -> Feature:
+        instance_based_on = list(pack.get(self.config.based_on, instance))
+        instance_entry = list(pack.get(self.config.entry_type, instance))
+        parent_entry = [entry.get_parent() for entry in instance_entry]
+        child_entry = [entry.get_child() for entry in instance_entry]
+
+        data = [self.element2id(getattr(entry, self.config.attribute)) for entry in instance_entry]
+        parent_unit_span = []
+        child_unit_span = []
+
+        for p, c in zip(parent_entry, child_entry):
+            parent_unit_span.append(self.get_index(instance_based_on, p))
+            child_unit_span.append(self.get_index(instance_based_on, c))
+
+        meta_data = {
+            "parent_unit_span": parent_unit_span,
+            "child_unit_span": child_unit_span,
+            "pad_value": self.get_pad_id(),
+            "dim": 1,
+            "dtype": self.get_dtype()
+        }
+
+        return Feature(data = data,
+                        metadata = meta_data,
+                        vocab = self.vocab)
+
+
+    def get_index(self, inner_entries, span):
+        index = DataIndex()
+        founds = []
+        for i, entry in enumerate(inner_entries):
+            if index.in_span(entry, span):
+                founds.append(i)
+        return [founds[0], founds[-1]+1]
+
