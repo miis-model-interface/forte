@@ -50,7 +50,7 @@ class ExtractorTest(unittest.TestCase):
                 features.append(extractor.extract(pack, instance))
 
         for feat in features:
-            recovered = [extractor.vocab.id2element(idx) for idx in feat._data]
+            recovered = [extractor.id2element(idx) for idx in feat._data]
             self.assertEqual(" ".join(recovered), sentence)
 
     def test_CharExtractor(self):
@@ -76,7 +76,7 @@ class ExtractorTest(unittest.TestCase):
             for instance in pack.get(Sentence):
                 features.append(extractor.extract(pack, instance))
         for feat in features:
-            recovered = [[extractor.vocab.id2element(char) for char in sent]
+            recovered = [[extractor.id2element(char) for char in sent]
                                             for sent in feat.unroll()[0]]
 
             recovered = ["".join(chars) for chars in recovered]
@@ -110,7 +110,7 @@ class ExtractorTest(unittest.TestCase):
         for pack in pipeline.process_dataset(self.dataset_path):
             for instance in pack.get(Sentence):
                 feature = extractor.extract(pack, instance)
-                feature = [extractor.vocab.id2element(idx) for idx in feature._data]
+                feature = [extractor.id2element(idx) for idx in feature._data]
                 self.assertListEqual(feature, expected)
 
 

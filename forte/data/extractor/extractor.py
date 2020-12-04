@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
+import torch
 from typing import Dict, Any, Union, Iterable, Type
 from ft.onto.base_ontology import Annotation, EntityMention
 from forte.common.configuration import Config
@@ -48,9 +49,13 @@ class BaseExtractor(ABC):
         if self.config.entry_type is None:
             raise AttributeError("Entry_type is needed in the config.")
 
-        self.vocab = Vocabulary(method = self.config.vocab_method,
-                                use_pad = self.config.vocab_use_pad,
-                                use_unk = self.config.vocab_use_unk)
+        if self.config.vocab_method != "raw":
+            self.vocab = Vocabulary(method = self.config.vocab_method,
+                                    use_pad = self.config.vocab_use_pad,
+                                    use_unk = self.config.vocab_use_unk)
+        else:
+            self.vocab = None
+
         if self.config.vocab_predefined is not None:
             self.predefined_vocab(self.config.vocab_predefined)
 
@@ -58,20 +63,66 @@ class BaseExtractor(ABC):
     def entry_type(self) -> Type[Annotation]:
         return self.config.entry_type
 
+    # Wrapper functions for vocab
     def items(self) -> Iterable:
-        return self.vocab.items()
+        if self.vocab:
+            return self.vocab.items()
+        else:
+            return None
 
     def size(self) -> int:
-        return len(self.vocab)
+        if self.vocab:
+            return len(self.vocab)
+        else:
+            return 0
 
     def add(self, element: Any):
-        self.vocab.add(element)
+        if self.vocab:
+            self.vocab.add(element)
+        else:
+            pass
 
     def has_key(self, element: Any):
-        return self.vocab.has_key(element)
+        if self.vocab:
+            return self.vocab.has_key(element)
+        else:
+            return True
 
     def id2element(self, idx:int):
-        return self.vocab.id2element(idx)
+        if self.vocab:
+            return self.vocab.id2element(idx)
+        else:
+            return idx
+
+    def element2id(self, element:Any):
+        if self.vocab:
+            return self.vocab.element2id(element)
+        else:
+            return element
+
+    def get_dict(self):
+        if self.vocab:
+            return self.vocab.element2id_dict
+        else:
+            return None
+
+    def get_pad_id(self)->int:
+        if self.vocab:
+            return self.vocab.get_pad_id()
+        else:
+            return 0
+
+    def get_unk_id(self)->int:
+        if self.vocab:
+            return self.vocab.get_unk_id()
+        else:
+            return None
+
+    def get_dtype(self):
+        if self.vocab:
+            return torch.long
+        else:
+            return str
 
     def predefined_vocab(self, predefined: set):
         '''This function will add elements from the passed-in predefined
@@ -130,15 +181,18 @@ class AttributeExtractor(BaseExtractor):
         '''
         data = []
         for entry in pack.get(self.config.entry_type, instance):
-            idx = self.vocab.element2id(getattr(entry, self.config.attribute))
+            idx = self.element2id(getattr(entry, self.config.attribute))
             data.append(idx)
         # One attribute correspond to one entry, therefore the dim is 1.
-        return Feature(data = data, pad_value = self.vocab.get_pad_id(),
-                        dim = 1)
+        meta_data = {"pad_value": self.get_pad_id(),
+                    "dim": 1,
+                    "dtype": self.get_dtype()}
+        return Feature(data = data, metadata = meta_data,
+                        vocab = self.vocab)
 
     def add_to_pack(self, pack: DataPack, instance: Annotation,
                     prediction: Any):
-        attrs = [self.vocab.id2element(x) for x in prediction]
+        attrs = [self.id2element(x) for x in prediction]
         for entry, attr in zip(pack.get(self.config.entry_type, instance),
                                 attrs):
             setattr(entry, self.config.attribute, attr)
@@ -166,12 +220,12 @@ class CharExtractor(BaseExtractor):
 
     def predefined_vocab(self, predefined: set):
         for element in predefined:
-            self.vocab.add(element)
+            self.add(element)
 
     def update_vocab(self, pack: DataPack, instance: Annotation):
         for word in pack.get(self.config.entry_type, instance):
             for char in word.text:
-                self.vocab.add(char)
+                self.add(char)
 
     def extract(self, pack: DataPack, instance: Annotation) -> Feature:
         data = []
@@ -180,7 +234,7 @@ class CharExtractor(BaseExtractor):
         for word in pack.get(self.config.entry_type, instance):
             tmp = []
             for char in word.text:
-                tmp.append(self.vocab.element2id(char))
+                tmp.append(self.element2id(char))
             data.append(tmp)
             max_char_length = max(max_char_length, len(tmp))
 
@@ -189,9 +243,11 @@ class CharExtractor(BaseExtractor):
                                     max_char_length)
         # For each token, the output is a list of characters.
         # Therefore the dim is 2.
-        ans = Feature(data = data, pad_value = self.vocab.get_pad_id(),
-                        dim = 2)
-        return ans
+        meta_data = {"pad_value": self.get_pad_id(),
+                    "dim": 2,
+                    "dtype": self.get_dtype()}
+        return Feature(data = data, metadata = meta_data,
+                        vocab = self.vocab)
 
 
 class BioSeqTaggingExtractor(BaseExtractor):
@@ -217,13 +273,22 @@ class BioSeqTaggingExtractor(BaseExtractor):
     def predefined_vocab(self, predefined: set):
         for tag in predefined:
             for element in self.bio_variance(tag):
-                self.vocab.add(element)
+                self.add(element)
 
     def update_vocab(self, pack: DataPack, instance: Annotation):
         for entry in pack.get(self.config.entry_type, instance):
             attribute = getattr(entry, self.config.attribute)
             for tag_variance in self.bio_variance(attribute):
-                self.vocab.add(tag_variance)
+                self.add(tag_variance)
+
+    def element2id(self, element:Any):
+        if self.vocab:
+            return super().element2id(element)
+        else:
+            if element[0]:
+                return "-".join(element)
+            else:
+                return element[1]
 
     def extract(self, pack: DataPack, instance: Annotation) -> Feature:
         instance_based_on = list(pack.get(self.config.based_on, instance))
@@ -236,9 +301,12 @@ class BioSeqTaggingExtractor(BaseExtractor):
                 new_pair = (None, pair[1])
             else:
                 new_pair = (getattr(pair[0], self.config.attribute), pair[1])
-            data.append(self.vocab.element2id(new_pair))
-
-        return Feature(data, self.vocab.get_pad_id(), 1)
+            data.append(self.element2id(new_pair))
+        meta_data = {"pad_value": self.get_pad_id(),
+                    "dim": 1,
+                    "dtype": self.get_dtype()}
+        return Feature(data = data, metadata = meta_data,
+                        vocab = self.vocab)
 
     def add_to_pack(self, pack: DataPack, instance: Annotation,
                     prediction: Any):
@@ -246,7 +314,7 @@ class BioSeqTaggingExtractor(BaseExtractor):
         encounter "I" while its tag is different from the previous tag,
         we will consider this "I" as a "B" and start a new tag here.
         '''
-        tags = [self.vocab.id2element(x) for x in prediction]
+        tags = [self.id2element(x) for x in prediction]
         tag_start = None
         tag_end = None
         tag_type = None
