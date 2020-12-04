@@ -41,7 +41,6 @@ class BaseExtractor(ABC):
             "vocab_use_pad": True,
             "vocab_use_unk": True,
             "vocab_method": "indexing",
-            "vocab_predefined": None
             }
         self.config = Config(config, default_hparams = defaults,
                                     allow_new_hparam = True)
@@ -131,7 +130,7 @@ class BaseExtractor(ABC):
         to add these elements.
         '''
         for element in predefined:
-            self.add(predefined)
+            self.add(element)
 
     def update_vocab(self, pack: DataPack, instance: Annotation):
         '''This function is used when user want to add element to vocabulary
@@ -167,10 +166,6 @@ class AttributeExtractor(BaseExtractor):
                                             allow_new_hparam=True)
         if self.config.attribute is None:
             raise AttributeError("Attribute is needed for AttributeExtractor.")
-
-    def predefined_vocab(self, predefined: set):
-        for element in predefined:
-            self.vocab.add(element)
 
     def update_vocab(self, pack: DataPack, instance: Annotation):
         for entry in pack.get(self.config.entry_type, instance):
@@ -219,10 +214,6 @@ class CharExtractor(BaseExtractor):
         self.config = Config(self.config,
                                 default_hparams = defaults,
                                 allow_new_hparam = True)
-
-    def predefined_vocab(self, predefined: set):
-        for element in predefined:
-            self.add(element)
 
     def update_vocab(self, pack: DataPack, instance: Annotation):
         for word in pack.get(self.config.entry_type, instance):
@@ -369,7 +360,8 @@ class LinkExtractor(BaseExtractor):
         parent_entry = [entry.get_parent() for entry in instance_entry]
         child_entry = [entry.get_child() for entry in instance_entry]
 
-        data = [self.element2id(getattr(entry, self.config.attribute)) for entry in instance_entry]
+        data = [self.element2id(getattr(entry, self.config.attribute))
+                    for entry in instance_entry]
         parent_unit_span = []
         child_unit_span = []
 
@@ -389,7 +381,6 @@ class LinkExtractor(BaseExtractor):
                         metadata = meta_data,
                         vocab = self.vocab)
 
-
     def get_index(self, inner_entries, span):
         index = DataIndex()
         founds = []
@@ -397,4 +388,3 @@ class LinkExtractor(BaseExtractor):
             if index.in_span(entry, span):
                 founds.append(i)
         return [founds[0], founds[-1]+1]
-
