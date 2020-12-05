@@ -107,7 +107,6 @@ tp_request = {
             "entry_type": PredicateLink,
             "attribute": "ner_type",
             "based_on": Token,
-            "strategy": "BIO",
             "vocab_method": "indexing",
             "type": DATA_OUTPUT,
             "extractor": ...,
