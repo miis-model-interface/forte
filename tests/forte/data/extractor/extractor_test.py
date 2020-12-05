@@ -17,7 +17,9 @@ from ft.onto.base_ontology import Sentence, Token, EntityMention
 from forte.pipeline import Pipeline
 from forte.data.readers.conll03_reader_new import CoNLL03Reader
 from forte.data.data_pack import DataPack
-from forte.data.extractor.extractor import TextExtractor, CharExtractor, BioSeqTaggingExtractor
+from forte.data.extractor.attribute_extractor import TextExtractor
+from forte.data.extractor.char_extractor import CharExtractor
+from forte.data.extractor.seqtagging_extractor import BioSeqTaggingExtractor
 
 
 class ExtractorTest(unittest.TestCase):

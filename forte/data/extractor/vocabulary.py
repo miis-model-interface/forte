@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+
 from collections import defaultdict
 from typing import List, Tuple, Any, Iterable
 
@@ -24,16 +26,16 @@ class Vocabulary:
     one-hot vector.
     '''
 
+    PAD_ID = 0
     PAD_ENTRY = "<PAD>"
     UNK_ENTRY = "<UNK>"
 
-    def __init__(self, method: str, use_pad: bool,
-                use_unk: bool, predefined: set = None):
+
+    def __init__(self, method: str, use_unk: bool):
         self.element2id_dict = defaultdict()
         self.id2element_dict = defaultdict()
+        self.add(self.PAD_ENTRY)
 
-        if use_pad:
-            self.add(self.PAD_ENTRY)
         if use_unk:
             self.add(self.UNK_ENTRY)
             self.id2element_dict.default_factory = \
@@ -46,17 +48,13 @@ class Vocabulary:
                                  % method)
 
         self.method = method
-        self.use_pad = use_pad
         self.use_unk = use_unk
 
-        if predefined is not None:
-            for element in predefined:
-                self.add(element)
+    def __len__(self) -> int:
+        return len(self.element2id_dict)
 
     def get_pad_id(self):
-        if self.use_pad:
-            return self.element2id(self.PAD_ENTRY)
-        return None
+        return self.PAD_ID
 
     def get_unk_id(self):
         if self.use_unk:
@@ -82,9 +80,6 @@ class Vocabulary:
 
     def id2element(self, idx: int) -> Any:
         return self.id2element_dict[idx]
-
-    def __len__(self) -> int:
-        return len(self.element2id_dict)
 
     def has_key(self, element: Any) -> bool:
         return element in self.element2id_dict
