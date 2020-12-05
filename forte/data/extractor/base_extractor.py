@@ -47,7 +47,7 @@ class BaseExtractor(ABC):
         assert self.config.entry_type is not None, \
             "Entry_type should not be None."
 
-        if self.config.vocab_method:
+        if self.config.vocab_method != "raw":
             self.vocab = Vocabulary(method = self.config.vocab_method,
                                     use_unk = self.config.vocab_use_unk)
         else:
