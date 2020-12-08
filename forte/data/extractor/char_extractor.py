@@ -40,21 +40,21 @@ class CharExtractor(BaseExtractor):
         max_char_length = -1
 
         for word in pack.get(self.config.entry_type, instance):
-            tmp = []
-            for char in word.text:
-                if self.vocab:
-                    tmp.append(self.element2repr(char))
-                else:
-                    tmp.append(char)
-            data.append(tmp)
-            max_char_length = max(max_char_length, len(tmp))
+            if self.vocab:
+                data.append([self.element2repr(char)
+                    for char in word.text])
+            else:
+                data.append(list(word.text))
+            max_char_length = max(max_char_length, len(data[-1]))
 
-        if hasattr(self.config, "max_char_length"):
-            max_char_length = min(self.config.max_char_length,
-                                    max_char_length)
+        if hasattr(self.config, "max_char_length") and \
+            self.config.max_char_length < max_char_length:
+            data = [token[:self.config.max_char_length] for
+                    token in data]
+
         # Data has two dimensions, therefore dim is 2.
         meta_data = {"pad_value": self.get_pad_id(),
                     "dim": 2,
                     "dtype": int if self.vocab else str}
-        return Feature(data = data, metadata = meta_data,
-                        vocab = self.vocab)
+        return Feature(data=data, metadata=meta_data,
+                        vocab=self.vocab)
