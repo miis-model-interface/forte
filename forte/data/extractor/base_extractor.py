@@ -57,6 +57,10 @@ class BaseExtractor(ABC):
     def entry_type(self) -> Type[Annotation]:
         return self.config.entry_type
 
+    @property
+    def vocab_method(self) -> str:
+        return self.config.vocab_method
+
     def items(self) -> Iterable:
         assert self.vocab, \
             "Items should not be called, when vocab is None."
