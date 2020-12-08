@@ -63,6 +63,8 @@ class AttributeExtractor(BaseExtractor):
                 attr = getattr(entry, self.attribute_get)
             if self.vocab:
                 rep = self.element2repr(attr)
+            else:
+                rep = attr
             data.append(rep)
         # Data only has one dimension, therefore dim is 1.
         meta_data = {"pad_value": self.get_pad_id(),
