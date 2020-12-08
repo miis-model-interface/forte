@@ -95,7 +95,10 @@ class Vocabulary:
         return self.id2element_dict[idx]
 
     def __len__(self) -> int:
-        return len(self.element2id_dict)
+        if self.method == "indexing":
+            return len(self.element2id_dict)
+        else:
+            return len(self.element2id_dict) - 1
 
     def has_element(self, element: Hashable) -> bool:
         return element in self.element2id_dict

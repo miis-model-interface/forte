@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import unittest
-from forte.data.extractor.vocabulary import Vocabulary
+from forte.data.vocabulary import Vocabulary
 from itertools import product
 
 
@@ -26,15 +26,49 @@ class VocabularyTest(unittest.TestCase):
         self.assertTrue(idx != -1)
         return idx
 
-    def test_indexing(self):
-        flags = [True, False]
-        for use_pad, use_unk, method in product(flags, flags, ["indexing", "one-hot"]):
-            print(use_pad, use_unk, method)
-            vocab = Vocabulary(method=method, use_pad=use_pad, use_unk=use_unk)
-            if use_pad:
-                self.assertEqual(vocab.get_pad_id(), vocab.element2id(vocab.PAD_ENTRY))
+    def test_indexing_vocab(self):
+        for use_unk in [True, False]:
+            vocab = Vocabulary(method="indexing", use_unk=use_unk)
+            
+            # Check PAD_ELEMENT
+            expected_pad_repr = 0
+            self.assertEqual(expected_pad_repr, vocab.get_pad_repr())
+            
+            # Check UNK_ELEMENT
             if use_unk:
-                self.assertEqual(vocab.get_unk_id(), vocab.element2id(vocab.UNK_ENTRY))
+                expected_unk_repr = 1
+                self.assertEqual(expected_unk_repr,
+                            vocab.element2repr(Vocabulary.UNK_ELEMENT))
+            
+            # Check vocabulary add, element2repr and id2element
+            elements = ["EU", "rejects", "German", "call", 
+                        "to", "boycott", "British", "lamb", "."]
+
+            for ele in elements:
+                vocab.add(ele)
+
+            reprs = [vocab.element2repr(ele) for ele in elements]
+            
+            self.assertTrue(len(reprs)>0)
+            self.assertTrue(isinstance(reprs[0], int))
+
+            recovered_elements = []
+            for rep in reprs:
+                idx = rep
+                recovered_elements.append(vocab.id2element(idx))
+
+            self.assertListEqual(elements, recovered_elements)
+
+
+    def test(self):
+        flags = [True, False]
+        for use_unk, method in product(flags, ["indexing", "one-hot"]):
+            vocab = Vocabulary(method=method, use_unk=use_unk)
+            
+            
+            
+            if use_unk:
+                self.assertEqual(vocab.get_unk_id(), vocab.element2repr(Vocabulary.UNK_ELEMENT))
 
             sentence = "EU rejects German call to boycott British lamb ."
             tokens = sentence.split(" ")
@@ -42,7 +76,7 @@ class VocabularyTest(unittest.TestCase):
             for tok in tokens:
                 vocab.add(tok)
 
-            self.assertEqual(len(set(tokens)) + int(use_unk) + int(use_pad), len(vocab))
+            self.assertEqual(len(set(tokens)) + int(use_unk), len(vocab))
 
             ids = [vocab.element2id(tok) for tok in tokens]
             if method == "indexing":
