@@ -14,7 +14,7 @@
 
 
 from typing import Dict, Union
-from ft.onto.base_ontology import Annotation
+from ft.onto.base_ontology import Token, Annotation
 from forte.common.configuration import Config
 from forte.data.data_pack import DataPack
 from forte.data.converter.feature import Feature
@@ -24,13 +24,11 @@ from forte.data.extractor.base_extractor import BaseExtractor
 class CharExtractor(BaseExtractor):
     '''CharExtractor will get each char for each token in the instance.'''
     def __init__(self, config: Union[Dict, Config]):
-        defaults = {
-                "max_char_length": None
-            }
         super().__init__(config)
-        self.config = Config(self.config,
-                                default_hparams = defaults,
-                                allow_new_hparam = True)
+        assert hasattr(self.config, "entry_type") and \
+            getattr(self.config, "entry_type") == Token, \
+            """CharExtractor is only used to extract characters of Token.
+            The entry_type can only be Token."""
 
     def update_vocab(self, pack: DataPack, instance: Annotation):
         for word in pack.get(self.config.entry_type, instance):
@@ -51,7 +49,7 @@ class CharExtractor(BaseExtractor):
             data.append(tmp)
             max_char_length = max(max_char_length, len(tmp))
 
-        if self.config.max_char_length is not None:
+        if hasattr(self.config, "max_char_length"):
             max_char_length = min(self.config.max_char_length,
                                     max_char_length)
         # Data has two dimensions, therefore dim is 2.

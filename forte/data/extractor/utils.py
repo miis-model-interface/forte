@@ -12,7 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-def bio_tagging(instance_based_on, instance_entry):
+
+from typing import List
+from ft.onto.base_ontology import Annotation
+
+def bio_tagging(instance_based_on: List[Annotation],
+                instance_entry: List[Annotation]):
     tagged = []
     cur_entry_id = 0
     prev_entry_id = None

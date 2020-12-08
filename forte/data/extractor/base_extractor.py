@@ -14,7 +14,7 @@
 
 
 from abc import ABC
-from typing import Tuple, Dict, Any, Union, Iterable, Type, Callable
+from typing import Dict, Any, Union, Type, Callable
 from ft.onto.base_ontology import Annotation
 from forte.common.configuration import Config
 from forte.data.data_pack import DataPack
@@ -29,6 +29,7 @@ class BaseExtractor(ABC):
     def __init__(self, config: Union[Dict, Config]):
         '''Config: {"entry_type" : required, Type[Annotation],
                     "vocab_method": optional, str,
+                        "raw", "indexing", "one-hot" are supported,
                         default is "indexing",
                     "vocab_use_unk": optional, bool,
                         default is True}
@@ -102,7 +103,6 @@ class BaseExtractor(ABC):
 
     def add_to_pack(self, pack: DataPack, instance: Annotation,
                     prediction: Any):
-        '''This function will add prediction to the pack
-        according to different type of extractor.
+        '''This function will add prediction to the pack.
         '''
         raise NotImplementedError()
