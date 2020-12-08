@@ -73,15 +73,9 @@ class BaseExtractor(ABC):
             return getattr(self.vocab, func_name)(*args, **kwargs)
         return wrapper
 
-    def get_pad_id(self)->int:
-        '''When vocabulary exists, return the pad id
-        in the vocabulary, otherwise return 0 as default
-        pad_id.
-        '''
-        if self.vocab:
-            return self.vocab.get_pad_id()
-        else:
-            return 0
+    def get_pad_id(self) -> int:
+        '''PAD ID is always 0.'''
+        return 0
 
     def predefined_vocab(self, predefined: set):
         '''This function will add elements from the
