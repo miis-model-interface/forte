@@ -30,18 +30,17 @@ class Vocabulary:
     PAD_ENTRY = "<PAD>"
     UNK_ENTRY = "<UNK>"
 
-
     def __init__(self, method: str, use_unk: bool):
         self.element2id_dict = defaultdict()
         self.id2element_dict = defaultdict()
         self.add(self.PAD_ENTRY)
 
         if use_unk:
+            def default_unk():
+                return self.UNK_ENTRY
             self.add(self.UNK_ENTRY)
-            self.id2element_dict.default_factory = \
-                lambda: self.UNK_ENTRY
-            self.element2id_dict.default_factory = \
-                lambda: self.element2id_dict[self.UNK_ENTRY]
+            self.id2element_dict.default_factory = default_unk
+            self.element2id_dict.default_factory = default_unk
 
         if method not in ("indexing", "one-hot"):
             raise AttributeError("The method %s is not supported in Vocabulary!"
