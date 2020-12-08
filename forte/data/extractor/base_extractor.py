@@ -14,42 +14,38 @@
 
 
 from abc import ABC
-from typing import Dict, Any, Union, Iterable, Type
+from typing import Tuple, Dict, Any, Union, Iterable, Type
 from ft.onto.base_ontology import Annotation
 from forte.common.configuration import Config
 from forte.data.data_pack import DataPack
-from forte.data.extractor.vocabulary import Vocabulary
+from forte.data.vocabulary import Vocabulary
 from forte.data.converter.feature import Feature
 
 
 class BaseExtractor(ABC):
-    '''This class is used to get feature from the datapack and also
-    add prediction back to datapack.
+    '''This class is used to get Feature from Datapack and
+    add prediction back to Datapack.
     '''
     def __init__(self, config: Union[Dict, Config]):
-        '''Config will need to contains some value to initialize the
-        extractor.
-        Entry_type: Type[EntryType], every extractor will get feature by loop on
-            one type of entry in the instance. e.g. Token, EntityMention.
-        Vocab_use_pad, Vocab_use_unk, Vocab_method" are used to configurate the
-                vocabulary class.
-        Vocab_predefined: a set of elements be added to the vocabulary.
+        '''Config: {"entry_type" : required, Type[Annotation],
+                    "vocab_method": optional, str,
+                        default is "indexing",
+                    "vocab_use_unk": optional, bool,
+                        default is True}
         '''
-        defaults = {
-            "entry_type": None,
-            "vocab_method": "indexing",
-            "vocab_use_unk": True,
-            }
-        self.config = Config(config,
-                            default_hparams = defaults,
-                            allow_new_hparam = True)
-
-        assert self.config.entry_type is not None, \
+        assert hasattr(config, "entry_type"), \
             "Entry_type should not be None."
 
+        defaults = {
+            "vocab_method": "indexing",
+            "vocab_use_unk": True,
+        }
+
+        self.config = Config(config, defaults, allow_new_hparam=True)
+
         if self.config.vocab_method != "raw":
-            self.vocab = Vocabulary(method = self.config.vocab_method,
-                                    use_unk = self.config.vocab_use_unk)
+            self.vocab = Vocabulary(method=self.config.vocab_method,
+                                    use_unk=self.config.vocab_use_unk)
         else:
             self.vocab = None
 
@@ -61,72 +57,75 @@ class BaseExtractor(ABC):
     def vocab_method(self) -> str:
         return self.config.vocab_method
 
-    def items(self) -> Iterable:
-        assert self.vocab, \
-            "Items should not be called, when vocab is None."
+    def check_vocab(self):
+        assert self.vocab, """When vocab_mehtod is raw,
+        vocabulary is not built and operation on vocabulary should not
+        be called."""
+
+    def items(self) -> Iterable[Tuple(Any, int)]:
+        self.check_vocab()
         return self.vocab.items()
 
     def size(self) -> int:
-        assert self.vocab, \
-            "Items should not be called, when vocab is None."
+        self.check_vocab()
         return len(self.vocab)
 
     def add(self, element: Any):
-        assert self.vocab, \
-            "Items should not be called, when vocab is None."
+        self.check_vocab()
         self.vocab.add(element)
 
     def has_key(self, element: Any) -> bool:
-        assert self.vocab, \
-            "Items should not be called, when vocab is None."
+        self.check_vocab()
         return self.vocab.has_key(element)
 
     def id2element(self, idx:int):
-        '''For raw vocabulary, map id to itself.
-        '''
-        assert self.vocab, \
-            "Items should not be called, when vocab is None."
+        self.check_vocab()
         return self.vocab.id2element(idx)
 
     def element2id(self, element:Any):
-        assert self.vocab, \
-            "Items should not be called, when vocab is None."
+        self.check_vocab()
         return self.vocab.element2id(element)
 
     def get_dict(self):
-        assert self.vocab, \
-            "Items should not be called, when vocab is None."
+        self.check_vocab()
         return self.vocab.element2id_dict
 
     def get_pad_id(self)->int:
+        '''When vocab_method is not raw, return the pad id
+        in the vocabulary, otherwise return 0 as default
+        pad_id.
+        '''
         if self.vocab:
             return self.vocab.get_pad_id()
         else:
-            return Vocabulary.PAD_ID
+            return 0
 
     def predefined_vocab(self, predefined: set):
-        '''This function will add elements from the passed-in predefined
-        set to the vocab. Different extractor might have different strategies
-        to add these elements.
+        '''This function will add elements from the
+        passed-in predefined set to the vocab. Different
+        extractors might have different strategies to add
+        these elements. Override this function if necessary.
         '''
         for element in predefined:
             self.add(element)
 
-    def update_vocab(self, pack: DataPack, instance: Annotation):
-        '''This function is used when user want to add element to vocabulary
-        using the current instance. e.g. add all tokens in one sentence to
-        the vocabulary.
+    def update_vocab(self, pack: DataPack,
+                    instance: Annotation):
+        '''This function will extract the feature from
+        instance and add element in the feature to vocabulary.
         '''
         raise NotImplementedError()
 
-    def extract(self, pack: DataPack, instance: Annotation) -> Feature:
-        '''This function will extract feature from one instance in the pack.
+    def extract(self, pack: DataPack,
+                instance: Annotation) -> Feature:
+        '''This function will extract feature from
+        one instance in the pack.
         '''
         raise NotImplementedError()
 
     def add_to_pack(self, pack: DataPack, instance: Annotation,
                     prediction: Any):
-        '''This function will add prediction to the pack according to different
-        type of extractor.
+        '''This function will add prediction to the pack
+        according to different type of extractor.
         '''
         raise NotImplementedError()

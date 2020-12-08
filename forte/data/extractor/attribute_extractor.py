@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from typing import Dict, Any, Union
+from typing import Dict, Any, Union, Iterable
 from ft.onto.base_ontology import Annotation
 from forte.common.configuration import Config
 from forte.data.data_pack import DataPack
@@ -27,17 +27,16 @@ class AttributeExtractor(BaseExtractor):
     '''
     def __init__(self, config: Union[Dict, Config]):
         super().__init__(config)
-        defaults = {
-            "attribute": None,
-        }
-        self.config = Config(self.config, default_hparams=defaults,
-                                            allow_new_hparam=True)
-        assert self.config.attribute is not None, \
-            "Attribute should not be None."
+
+        assert hasattr(self.config, "get_attribute_fn") and \
+            callable(getattr(self.config, "get_attribute_fn")), \
+            "get_attribute_fn should be passed in as a function"
 
     def update_vocab(self, pack: DataPack, instance: Annotation):
+        assert self.vocab, \
+            "Update_vocab should not be called, when vocab method is raw."
         for entry in pack.get(self.config.entry_type, instance):
-            self.add(getattr(entry, self.config.attribute))
+            self.add(self.config.get_attribute_fn(entry, self.config.attribute))
 
     def extract(self, pack: DataPack, instance: Annotation) -> Feature:
         '''The AttributeExtractor only extract one attribute for one entry
@@ -46,29 +45,21 @@ class AttributeExtractor(BaseExtractor):
         '''
         data = []
         for entry in pack.get(self.config.entry_type, instance):
-            idx = getattr(entry, self.config.attribute)
+            idx = self.config.get_attribute_fn(entry)
             if self.vocab:
                 idx = self.element2id(idx)
             data.append(idx)
         # Data only has one dimension, therefore dim is 1.
         meta_data = {"pad_value": self.get_pad_id(),
-                    "dim": 1,
-                    "dtype": int if self.vocab else str}
-        return Feature(data = data, metadata = meta_data,
+                        "dim": 1,
+                        "dtype": int if self.vocab else Any}
+        return Feature(data = data,
+                        metadata = meta_data,
                         vocab = self.vocab)
 
     def add_to_pack(self, pack: DataPack, instance: Annotation,
-                    prediction: Any):
-        attrs = [self.id2element(x) for x in prediction]
+                    prediction: Iterable[Union[int, Any]]):
+        attrs = [self.id2element(x) if isinstance(x, int) else x for x in prediction]
         for entry, attr in zip(pack.get(self.config.entry_type, instance),
                                 attrs):
             setattr(entry, self.config.attribute, attr)
-
-
-class TextExtractor(AttributeExtractor):
-    '''A special type of AttributeExtractor, TextExtractor.
-    It extract the text attribute on entry within one instance.
-    '''
-    def __init__(self, config: Union[Dict, Config]):
-        config["attribute"] = 'text'
-        super().__init__(config)
