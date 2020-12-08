@@ -69,8 +69,7 @@ class Vocabulary:
             self.id2element_dict[idx] = element
 
     def get_one_hot(self, idx: int) -> List[int]:
-        '''This function will turn '''
-        vec = [0] * (len(self)-1)
+        vec = [0] * len(self)
         vec[idx] = 1
         return vec
 
