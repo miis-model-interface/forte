@@ -36,7 +36,7 @@ class AttributeExtractor(BaseExtractor):
         assert self.vocab, \
             "Update_vocab should not be called, when vocab method is raw."
         for entry in pack.get(self.config.entry_type, instance):
-            self.add(self.config.get_attribute_fn(entry, self.config.attribute))
+            self.add(self.config.get_attribute_fn(entry))
 
     def extract(self, pack: DataPack, instance: Annotation) -> Feature:
         '''The AttributeExtractor only extract one attribute for one entry

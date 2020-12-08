@@ -40,7 +40,7 @@ class BaseExtractor(ABC):
 
         self.config = Config(config, defaults, allow_new_hparam=True)
 
-        assert hasattr(config, "entry_type"), \
+        assert hasattr(self.config, "entry_type"), \
             "Entry_type should not be None."
 
         if self.config.vocab_method != "raw":
