@@ -33,15 +33,15 @@ class BaseExtractor(ABC):
                     "vocab_use_unk": optional, bool,
                         default is True}
         '''
-        assert hasattr(config, "entry_type"), \
-            "Entry_type should not be None."
-
         defaults = {
             "vocab_method": "indexing",
             "vocab_use_unk": True,
         }
 
         self.config = Config(config, defaults, allow_new_hparam=True)
+
+        assert hasattr(config, "entry_type"), \
+            "Entry_type should not be None."
 
         if self.config.vocab_method != "raw":
             self.vocab = Vocabulary(method=self.config.vocab_method,
@@ -62,7 +62,7 @@ class BaseExtractor(ABC):
         vocabulary is not built and operation on vocabulary should not
         be called."""
 
-    def items(self) -> Iterable[Tuple(Any, int)]:
+    def items(self) -> Iterable[Tuple[Any, int]]:
         self.check_vocab()
         return self.vocab.items()
 
