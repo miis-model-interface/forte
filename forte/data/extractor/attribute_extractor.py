@@ -33,8 +33,6 @@ class AttributeExtractor(BaseExtractor):
             "get_attribute_fn should be passed in as a function"
 
     def update_vocab(self, pack: DataPack, instance: Annotation):
-        assert self.vocab, \
-            "Update_vocab should not be called, when vocab method is raw."
         for entry in pack.get(self.config.entry_type, instance):
             self.add(self.config.get_attribute_fn(entry))
 

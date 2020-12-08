@@ -57,41 +57,41 @@ class BaseExtractor(ABC):
     def vocab_method(self) -> str:
         return self.config.vocab_method
 
-    def check_vocab(self):
+    def check_vocab_exist(self):
         assert self.vocab, """When vocab_mehtod is raw,
         vocabulary is not built and operation on vocabulary should not
         be called."""
 
     def items(self) -> Iterable[Tuple[Any, int]]:
-        self.check_vocab()
+        self.check_vocab_exist()
         return self.vocab.items()
 
     def size(self) -> int:
-        self.check_vocab()
+        self.check_vocab_exist()
         return len(self.vocab)
 
     def add(self, element: Any):
-        self.check_vocab()
+        self.check_vocab_exist()
         self.vocab.add(element)
 
     def has_key(self, element: Any) -> bool:
-        self.check_vocab()
+        self.check_vocab_exist()
         return self.vocab.has_key(element)
 
     def id2element(self, idx:int):
-        self.check_vocab()
+        self.check_vocab_exist()
         return self.vocab.id2element(idx)
 
     def element2id(self, element:Any):
-        self.check_vocab()
+        self.check_vocab_exist()
         return self.vocab.element2id(element)
 
     def get_dict(self):
-        self.check_vocab()
+        self.check_vocab_exist()
         return self.vocab.element2id_dict
 
     def get_pad_id(self)->int:
-        '''When vocab_method is not raw, return the pad id
+        '''When vocabulary exists, return the pad id
         in the vocabulary, otherwise return 0 as default
         pad_id.
         '''
