@@ -40,8 +40,8 @@ class AttributeExtractor(BaseExtractor):
             if isinstance(self.attribute_get, str):
                 self.attribute_set = self.attribute_get
             else:
-                raise AttributeError("Attribute_set need to be pass\
-                    in when attribute_get is not a field of str type.")
+                raise AttributeError("Attribute_set need to be pass "
+                        "in when attribute_get is not a field of str type.")
 
     def update_vocab(self, pack: DataPack, instance: Annotation):
         for entry in pack.get(self.config.entry_type, instance):
@@ -68,15 +68,18 @@ class AttributeExtractor(BaseExtractor):
         meta_data = {"pad_value": self.get_pad_id(),
                         "dim": 1,
                         "dtype": int if self.vocab else Any}
-        return Feature(data = data,
-                        metadata = meta_data,
-                        vocab = self.vocab)
+        return Feature(data=data,
+                        metadata=meta_data,
+                        vocab=self.vocab)
 
     def add_to_pack(self, pack: DataPack, instance: Annotation,
                     prediction: Iterable[Union[int, Any]]):
-        instance_entry = pack.get(self.config.entry_type, instance)
+        assert self.attribute_set != "text", "Text attribute is not"\
+                                            "allowed to be set."
+        instance_entry = list(pack.get(self.config.entry_type, instance))
         prediction = prediction[:len(instance_entry)]
-        attrs = [self.id2element(x) if isinstance(x, int) else x for x in prediction]
+        attrs = [self.id2element(x) if isinstance(x, int)
+                    else x for x in prediction]
         for entry, attr in zip(instance_entry, attrs):
             if callable(self.attribute_set):
                 self.attribute_set(entry, attr)
