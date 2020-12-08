@@ -35,8 +35,8 @@ class BioSeqTaggingExtractor(BaseExtractor):
             "based_on": None
         }
         self.config = Config(self.config,
-                                default_hparams = defaults,
-                                allow_new_hparam = True)
+                                default_hparams=defaults,
+                                allow_new_hparam=True)
         assert self.config.attribute is not None, \
             "Attribute should not be None."
         assert self.config.based_on is not None, \
@@ -74,8 +74,8 @@ class BioSeqTaggingExtractor(BaseExtractor):
         meta_data = {"pad_value": self.get_pad_id(),
                     "dim": 1,
                     "dtype": int if self.vocab else tuple}
-        return Feature(data = data, metadata = meta_data,
-                        vocab = self.vocab)
+        return Feature(data=data, metadata=meta_data,
+                        vocab=self.vocab)
 
     def add_to_pack(self, pack: DataPack, instance: Annotation,
                     prediction: Any):
