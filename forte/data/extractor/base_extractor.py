@@ -55,7 +55,7 @@ class BaseExtractor(ABC):
         self.add = self.wrap_vocab_fn("add")
         self.has_key = self.wrap_vocab_fn("has_key")
         self.id2element = self.wrap_vocab_fn("id2element")
-        self.element2id = self.wrap_vocab_fn("element2repr")
+        self.element2repr = self.wrap_vocab_fn("element2repr")
         self.get_dict = self.wrap_vocab_fn("get_dict")
 
     @property

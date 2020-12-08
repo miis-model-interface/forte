@@ -28,13 +28,27 @@ class AttributeExtractor(BaseExtractor):
     def __init__(self, config: Union[Dict, Config]):
         super().__init__(config)
 
-        assert hasattr(self.config, "get_attribute_fn") and \
-            callable(getattr(self.config, "get_attribute_fn")), \
-            "get_attribute_fn should be passed in as a function"
+        assert hasattr(self.config, "attribute_get"), \
+            "Attribute is needed in AttributeExtractor"
+
+        self.attribute_get = getattr(self.config, "attribute_get")
+
+        # The default attribute_set is the same as attribute_get.
+        if hasattr(self.config, "attribute_set"):
+            self.attribute_set = getattr(self.config, "attribute_set")
+        else:
+            if isinstance(self.attribute_get, str):
+                self.attribute_set = self.attribute_get
+            else:
+                raise AttributeError("Attribute_set need to be pass\
+                    in when attribute_get is not a field of str type.")
 
     def update_vocab(self, pack: DataPack, instance: Annotation):
         for entry in pack.get(self.config.entry_type, instance):
-            self.add(self.config.get_attribute_fn(entry))
+            if callable(self.attribute_get):
+                self.add(self.attribute_get(entry))
+            else:
+                self.add(getattr(entry, self.attribute_get))
 
     def extract(self, pack: DataPack, instance: Annotation) -> Feature:
         '''The AttributeExtractor only extract one attribute for one entry
@@ -43,10 +57,13 @@ class AttributeExtractor(BaseExtractor):
         '''
         data = []
         for entry in pack.get(self.config.entry_type, instance):
-            idx = self.config.get_attribute_fn(entry)
+            if callable(self.attribute_get):
+                attr = self.attribute_get(entry)
+            else:
+                attr = getattr(entry, self.attribute_get)
             if self.vocab:
-                idx = self.element2id(idx)
-            data.append(idx)
+                rep = self.element2repr(attr)
+            data.append(rep)
         # Data only has one dimension, therefore dim is 1.
         meta_data = {"pad_value": self.get_pad_id(),
                         "dim": 1,
@@ -61,4 +78,7 @@ class AttributeExtractor(BaseExtractor):
         prediction = prediction[:len(instance_entry)]
         attrs = [self.id2element(x) if isinstance(x, int) else x for x in prediction]
         for entry, attr in zip(instance_entry, attrs):
-            setattr(entry, self.config.attribute, attr)
+            if callable(self.attribute_set):
+                self.attribute_set(entry, attr)
+            else:
+                setattr(entry, self.attribute_set, attr)
