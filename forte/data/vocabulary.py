@@ -14,7 +14,7 @@
 
 
 from collections import defaultdict
-from typing import List, Tuple, Union, Any, Iterable
+from typing import List, Tuple, Dict, Union, Hashable, Iterable
 
 class Vocabulary:
     '''This class maps element to representation. Element
@@ -28,7 +28,7 @@ class Vocabulary:
         Repr:       0      1      2      3   ...
     For "one-hot" vocabulary,
         Element:  <PAD>  ele1   ele2   ele3  ...
-        id:        -1      0      1      2   ...
+        Id:        -1      0      1      2   ...
         Repr:      [0,    [1,    [0,    [0,  ...
                     0,     0,     1,     0,  ...
                     0,     0,     0,     1,  ...
@@ -66,7 +66,7 @@ class Vocabulary:
         self.method = method
         self.use_unk = use_unk
 
-    def add(self, element: Any):
+    def add(self, element: Hashable):
         self.element2id_dict[element] = self.next_id
         self.id2element_dict[self.next_id] = element
         self.next_id += 1
@@ -74,7 +74,7 @@ class Vocabulary:
     def id2repr(self, idx: int) -> List[int]:
         if self.method == "indexing":
             return idx
-        vec = [0]*len(self)
+        vec = [0] * self.next_id
         if idx == -1:
             return vec
         else:
@@ -88,17 +88,20 @@ class Vocabulary:
         return self.id2repr(
             self.element2id_dict[Vocabulary.PAD_ELEMENT])
 
-    def element2repr(self, element: Any) -> Union[int, List[int]]:
+    def element2repr(self, element: Hashable) -> Union[int, List[int]]:
         return self.id2repr(self.element2id_dict[element])
 
-    def id2element(self, idx: int) -> Any:
+    def id2element(self, idx: int) -> Hashable:
         return self.id2element_dict[idx]
 
     def __len__(self) -> int:
         return len(self.element2id_dict)
 
-    def has_element(self, element: Any) -> bool:
+    def has_element(self, element: Hashable) -> bool:
         return element in self.element2id_dict
 
-    def items(self) -> Iterable[Tuple[Any, int]]:
+    def items(self) -> Iterable[Tuple[Hashable, int]]:
         return self.element2id_dict.items()
+
+    def get_dict(self) -> Dict[Hashable, int]:
+        return self.element2id_dict
