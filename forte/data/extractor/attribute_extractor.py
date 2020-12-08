@@ -59,7 +59,8 @@ class AttributeExtractor(BaseExtractor):
 
     def add_to_pack(self, pack: DataPack, instance: Annotation,
                     prediction: Iterable[Union[int, Any]]):
+        instance_entry = pack.get(self.config.entry_type, instance)
+        prediction = prediction[:len(instance_entry)]
         attrs = [self.id2element(x) if isinstance(x, int) else x for x in prediction]
-        for entry, attr in zip(pack.get(self.config.entry_type, instance),
-                                attrs):
+        for entry, attr in zip(instance_entry, attrs):
             setattr(entry, self.config.attribute, attr)

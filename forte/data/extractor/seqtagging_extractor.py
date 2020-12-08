@@ -83,12 +83,14 @@ class BioSeqTaggingExtractor(BaseExtractor):
         encounter "I" while its tag is different from the previous tag,
         we will consider this "I" as a "B" and start a new tag here.
         '''
+        instance_based_on = list(pack.get(self.config.based_on, instance))
+        prediction = prediction[:len(instance_based_on)]
         tags = [self.id2element(x) for x in prediction]
         tag_start = None
         tag_end = None
         tag_type = None
         cnt = 0
-        for entry, tag in zip(pack.get(self.config.based_on, instance), tags):
+        for entry, tag in zip(instance_based_on, tags):
             if tag[1] == "O" or tag[1] == "B":
                 if tag_type:
                     entity_mention = EntityMention(pack, tag_start, tag_end)

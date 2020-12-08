@@ -140,18 +140,6 @@ class Predictor(BaseProcessor):
         self.model = model
         self.predict_forward_fn = predict_forward_fn
 
-    def unpad(self, predictions: Dict, packs: List[DataPack],
-                    instances: List[Annotation]):
-        new_predictions = {}
-        for tag, preds in predictions.items():
-            new_preds = []
-            for pred, pack, instance in zip(preds, packs, instances):
-                new_preds.append(
-                    self.feature_resource['schemes'][tag]['unpadder'].unpad(
-                        pred, pack, instance))
-            new_predictions[tag] = new_preds
-        return new_predictions
-
     def add_to_pack(self, predictions: Dict, packs: List[DataPack],
                     instances: List[Annotation]):
         for tag, preds in predictions.items():
@@ -163,9 +151,7 @@ class Predictor(BaseProcessor):
     def predict(self, input_pack: DataPack):
         for tensor_collection, packs, instances in \
                                 self.batcher.yield_batch(input_pack):
-            predictions = self.predict_forward_fn(self.model,
-                                                    tensor_collection)
-            predictions = self.unpad(predictions, packs, instances)
+            predictions = self.predict_forward_fn(self.model, tensor_collection)
             self.add_to_pack(predictions, packs, instances)
 
     def _process(self, input_pack: DataPack):
@@ -189,7 +175,6 @@ class Predictor(BaseProcessor):
         for tensor_collection, packs, instances in self.batcher.flush_batch():
             predictions = self.predict_forward_fn(self.model,
                                                     tensor_collection)
-            predictions = self.unpad(predictions, packs, instances)
             self.add_to_pack(predictions, packs, instances)
 
         current_queue = self._process_manager.current_queue
