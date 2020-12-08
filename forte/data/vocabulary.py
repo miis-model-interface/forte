@@ -65,9 +65,10 @@ class Vocabulary:
         self.use_unk = use_unk
 
     def add(self, element: Hashable):
-        self.element2id_dict[element] = self.next_id
-        self.id2element_dict[self.next_id] = element
-        self.next_id += 1
+        if element not in self.element2id_dict:
+            self.element2id_dict[element] = self.next_id
+            self.id2element_dict[self.next_id] = element
+            self.next_id += 1
 
     def id2repr(self, idx: int) -> List[int]:
         if self.method == "indexing":

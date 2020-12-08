@@ -37,6 +37,11 @@ class VocabularyTest(unittest.TestCase):
                         "to", "boycott", "British", "lamb", "."]
             for ele in elements:
                 vocab.add(ele)
+            save_len = len(vocab)
+            for ele in elements:
+                vocab.add(ele)
+            self.assertEqual(save_len, len(vocab))
+
             reprs = [vocab.element2repr(ele) for ele in elements]
 
             self.assertTrue(len(reprs) > 0)
