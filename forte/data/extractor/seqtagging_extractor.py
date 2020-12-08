@@ -68,7 +68,7 @@ class BioSeqTaggingExtractor(BaseExtractor):
             else:
                 new_pair = (getattr(pair[0], self.config.attribute), pair[1])
             if self.vocab:
-                data.append(self.element2id(new_pair))
+                data.append(self.element2repr(new_pair))
             else:
                 data.append(new_pair)
         meta_data = {"pad_value": self.get_pad_id(),

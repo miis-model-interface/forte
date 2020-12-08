@@ -78,7 +78,7 @@ class VocabularyTest(unittest.TestCase):
 
             self.assertEqual(len(set(tokens)) + int(use_unk), len(vocab))
 
-            ids = [vocab.element2id(tok) for tok in tokens]
+            ids = [vocab.element2repr(tok) for tok in tokens]
             if method == "indexing":
                 self.assertTrue(isinstance(ids[0], int))
             else:

@@ -51,7 +51,7 @@ class LinkExtractor(BaseExtractor):
                     for entry in instance_entry]
 
         if self.vocab:
-            data = [self.element2id(entry) for entry in data]
+            data = [self.element2repr(entry) for entry in data]
 
         parent_unit_span = []
         child_unit_span = []

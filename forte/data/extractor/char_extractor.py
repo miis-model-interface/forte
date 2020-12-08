@@ -43,7 +43,7 @@ class CharExtractor(BaseExtractor):
             tmp = []
             for char in word.text:
                 if self.vocab:
-                    tmp.append(self.element2id(char))
+                    tmp.append(self.element2repr(char))
                 else:
                     tmp.append(char)
             data.append(tmp)
