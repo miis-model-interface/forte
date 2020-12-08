@@ -14,7 +14,7 @@
 
 
 from abc import ABC
-from typing import Tuple, Dict, Any, Union, Iterable, Type
+from typing import Tuple, Dict, Any, Union, Iterable, Type, Callable
 from ft.onto.base_ontology import Annotation
 from forte.common.configuration import Config
 from forte.data.data_pack import DataPack
@@ -49,6 +49,14 @@ class BaseExtractor(ABC):
         else:
             self.vocab = None
 
+        self.items = self.wrap_vocab_fn("items")
+        self.size = self.wrap_vocab_fn("__len__")
+        self.add = self.wrap_vocab_fn("add")
+        self.has_key = self.wrap_vocab_fn("has_key")
+        self.id2element = self.wrap_vocab_fn("id2element")
+        self.element2id = self.wrap_vocab_fn("element2id")
+        self.get_dict = self.wrap_vocab_fn("get_dict")
+
     @property
     def entry_type(self) -> Type[Annotation]:
         return self.config.entry_type
@@ -57,38 +65,13 @@ class BaseExtractor(ABC):
     def vocab_method(self) -> str:
         return self.config.vocab_method
 
-    def check_vocab_exist(self):
-        assert self.vocab, """When vocab_mehtod is raw,
-        vocabulary is not built and operation on vocabulary should not
-        be called."""
-
-    def items(self) -> Iterable[Tuple[Any, int]]:
-        self.check_vocab_exist()
-        return self.vocab.items()
-
-    def size(self) -> int:
-        self.check_vocab_exist()
-        return len(self.vocab)
-
-    def add(self, element: Any):
-        self.check_vocab_exist()
-        self.vocab.add(element)
-
-    def has_key(self, element: Any) -> bool:
-        self.check_vocab_exist()
-        return self.vocab.has_key(element)
-
-    def id2element(self, idx:int):
-        self.check_vocab_exist()
-        return self.vocab.id2element(idx)
-
-    def element2id(self, element:Any):
-        self.check_vocab_exist()
-        return self.vocab.element2id(element)
-
-    def get_dict(self):
-        self.check_vocab_exist()
-        return self.vocab.element2id_dict
+    def wrap_vocab_fn(self, func_name: str) -> Callable:
+        def wrapper(*args, **kwargs):
+            assert self.vocab, """When vocab_mehtod is raw,
+            vocabulary is not built and operation on vocabulary should not
+            be called."""
+            return getattr(self.vocab, func_name)(*args, **kwargs)
+        return wrapper
 
     def get_pad_id(self)->int:
         '''When vocabulary exists, return the pad id
