@@ -13,8 +13,8 @@
 # limitations under the License.
 
 
-from collections import defaultdict
 from typing import List, Tuple, Dict, Union, Hashable, Iterable
+
 
 class Vocabulary:
     '''This class maps element to representation. Element
@@ -45,8 +45,8 @@ class Vocabulary:
     UNK_ELEMENT = "<UNK>"
 
     def __init__(self, method: str, use_unk: bool):
-        self.element2id_dict = defaultdict()
-        self.id2element_dict = defaultdict()
+        self.element2id_dict = dict()
+        self.id2element_dict = dict()
 
         if method == "indexing":
             self.next_id = 0
@@ -60,8 +60,6 @@ class Vocabulary:
 
         if use_unk:
             self.add(Vocabulary.UNK_ELEMENT)
-            self.element2id_dict.default_factory = \
-                self.get_unk_id
 
         self.method = method
         self.use_unk = use_unk
@@ -81,15 +79,14 @@ class Vocabulary:
             vec[idx] = 1
             return vec
 
-    def get_unk_id(self) -> int:
-        return self.element2id_dict[Vocabulary.UNK_ELEMENT]
-
-    def get_pad_repr(self) -> Union[int, List[int]]:
-        return self.id2repr(
-            self.element2id_dict[Vocabulary.PAD_ELEMENT])
-
-    def element2repr(self, element: Hashable) -> Union[int, List[int]]:
-        return self.id2repr(self.element2id_dict[element])
+    def element2repr(self, element: Hashable) \
+                    -> Union[int, List[int]]:
+        if self.use_unk:
+            idx = self.element2id_dict.get(element,
+                    self.element2id_dict[Vocabulary.UNK_ELEMENT])
+        else:
+            idx = self.element2id_dict[element]
+        return self.id2repr(idx)
 
     def id2element(self, idx: int) -> Hashable:
         return self.id2element_dict[idx]

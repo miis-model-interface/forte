@@ -12,8 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import unittest
-from forte.data.vocabulary import Vocabulary
 from itertools import product
+from forte.data.vocabulary import Vocabulary
 
 
 class VocabularyTest(unittest.TestCase):
@@ -27,67 +27,79 @@ class VocabularyTest(unittest.TestCase):
         return idx
 
     def test_indexing_vocab(self):
-        for use_unk in [True, False]:
-            vocab = Vocabulary(method="indexing", use_unk=use_unk)
-            
-            # Check PAD_ELEMENT
-            expected_pad_repr = 0
-            self.assertEqual(expected_pad_repr, vocab.get_pad_repr())
-            
-            # Check UNK_ELEMENT
-            if use_unk:
-                expected_unk_repr = 1
-                self.assertEqual(expected_unk_repr,
-                            vocab.element2repr(Vocabulary.UNK_ELEMENT))
-            
-            # Check vocabulary add, element2repr and id2element
-            elements = ["EU", "rejects", "German", "call", 
-                        "to", "boycott", "British", "lamb", "."]
+        methods = ["indexing", "one-hot"]
+        flags = [True, False]
+        for method, use_unk in product(methods, flags):
+            vocab = Vocabulary(method=method, use_unk=use_unk)
 
+            # Check vocabulary add, element2repr and id2element
+            elements = ["EU", "rejects", "German", "call",
+                        "to", "boycott", "British", "lamb", "."]
             for ele in elements:
                 vocab.add(ele)
-
             reprs = [vocab.element2repr(ele) for ele in elements]
-            
-            self.assertTrue(len(reprs)>0)
-            self.assertTrue(isinstance(reprs[0], int))
+
+            self.assertTrue(len(reprs) > 0)
+            if method == "indexing":
+                self.assertTrue(isinstance(reprs[0], int))
+            else:
+                self.assertTrue(isinstance(reprs[0], list))
 
             recovered_elements = []
             for rep in reprs:
-                idx = rep
+                if method == "indexing":
+                    idx = rep
+                else:
+                    idx = self.argmax(rep)
                 recovered_elements.append(vocab.id2element(idx))
 
             self.assertListEqual(elements, recovered_elements)
 
+            # Check __len__, items.
+            # For "indexing", PAD_ELEMENT is automatically
+            # added and counted. For "one-hot", PAD_ELEMENT is
+            # automatically added and note counted.
+            self.assertEqual(len(set(elements)) + int(use_unk) +
+                        int(method == "indexing"),
+                        len(vocab))
+            self.assertEqual(len(vocab),
+                len(list(vocab.items())) - int(method == "one-hot"))
+            saved_len = len(vocab)
 
-    def test(self):
-        flags = [True, False]
-        for use_unk, method in product(flags, ["indexing", "one-hot"]):
-            vocab = Vocabulary(method=method, use_unk=use_unk)
-            
-            
-            
-            if use_unk:
-                self.assertEqual(vocab.get_unk_id(), vocab.element2repr(Vocabulary.UNK_ELEMENT))
+            # Check has_element
+            for ele in elements:
+                self.assertTrue(vocab.has_element(ele))
+            for ele in range(10):
+                self.assertFalse(vocab.has_element(ele))
 
-            sentence = "EU rejects German call to boycott British lamb ."
-            tokens = sentence.split(" ")
-
-            for tok in tokens:
-                vocab.add(tok)
-
-            self.assertEqual(len(set(tokens)) + int(use_unk), len(vocab))
-
-            ids = [vocab.element2repr(tok) for tok in tokens]
+            # Check PAD_ELEMENT, get_dict
             if method == "indexing":
-                self.assertTrue(isinstance(ids[0], int))
+                expected_pad_idx = 0
+                expected_pad_repr = 0
             else:
-                print(ids[0])
-                self.assertTrue(isinstance(ids[0], list))
-                ids = [self.argmax(one_hot) for one_hot in ids]
-            print(ids)
-            reverted = [vocab.id2element(idx) for idx in ids]
-            self.assertListEqual(tokens, reverted)
+                expected_pad_idx = -1
+                expected_pad_repr = [0] * len(vocab)
+            self.assertEqual(expected_pad_repr,
+                        vocab.element2repr(Vocabulary.PAD_ELEMENT))
+            self.assertEqual(expected_pad_idx,
+                        vocab.get_dict()[Vocabulary.PAD_ELEMENT])
+
+            # Check UNK_ELEMENT, get_dict
+            if use_unk:
+                if method == "indexing":
+                    expected_unk_idx = 1
+                    expected_unk_repr = 1
+                else:
+                    expected_unk_idx = 0
+                    expected_unk_repr = [0] * len(vocab)
+                    expected_unk_repr[0] = 1
+                self.assertEqual(expected_unk_repr,
+                            vocab.element2repr(Vocabulary.UNK_ELEMENT))
+                self.assertEqual(expected_unk_idx,
+                            vocab.get_dict()[Vocabulary.UNK_ELEMENT])
+                self.assertEqual(expected_unk_repr,
+                            vocab.element2repr("THIS_IS_UNKNOWN"))
+                self.assertEqual(saved_len, len(vocab))
 
 
 if __name__ == '__main__':
