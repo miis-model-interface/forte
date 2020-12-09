@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""This file predict the ner tag for conll03 dataset."""
 
 import yaml
 import torch
@@ -20,7 +21,9 @@ from forte.predictor import Predictor
 from ft.onto.base_ontology import Sentence, EntityMention
 from examples.ner_new.ner_evaluator import CoNLLNEREvaluator
 
+
 def predict_forward_fn(model, batch):
+    '''Use model and batch data to predict ner tag.'''
     word = batch["text_tag"]["tensor"]
     char = batch["char_tag"]["tensor"]
     word_masks = batch["text_tag"]["mask"][0]
@@ -28,16 +31,17 @@ def predict_forward_fn(model, batch):
     output = output.numpy()
     return {'ner_tag': output}
 
+
 config_predict = yaml.safe_load(open("configs/config_predict.yml", "r"))
-model = torch.load(config_predict['model_path'])
+saved_model = torch.load(config_predict['model_path'])
 train_state = torch.load(config_predict['train_state_path'])
 
 
 reader = CoNLL03Reader()
 predictor = Predictor(batch_size=config_predict['batch_size'],
-                model = model,
-                predict_forward_fn = predict_forward_fn,
-                feature_resource = train_state['feature_resource'])
+                model=saved_model,
+                predict_forward_fn=predict_forward_fn,
+                feature_resource=train_state['feature_resource'])
 evaluator = CoNLLNEREvaluator()
 
 

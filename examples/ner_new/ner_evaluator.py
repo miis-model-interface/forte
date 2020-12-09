@@ -11,11 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+# pylint: disable-msg=too-many-locals
+"""Evaluator for Conll03 NER tag."""
 import os
 from pathlib import Path
-
-from forte.data.data_pack import DataPack
+from forte.data.base_pack import PackType
 from forte.evaluation.base import Evaluator
 from forte.data.extractor.utils import bio_tagging
 from ft.onto.base_ontology import Sentence, Token, EntityMention
@@ -26,12 +26,14 @@ def _post_edit(element):
         return "O"
     return "%s-%s" % (element[1], element[0].ner_type)
 
+
 def _get_tag(data, pack):
     based_on = [pack.get_entry(x) for x in data["Token"]['tid']]
     entry = [pack.get_entry(x) for x in data["EntityMention"]['tid']]
     tag = bio_tagging(based_on, entry)
     tag = [_post_edit(x) for x in tag]
     return tag
+
 
 def _write_tokens_to_file(pred_pack, pred_request,
                           refer_pack, refer_request,
@@ -47,16 +49,17 @@ def _write_tokens_to_file(pred_pack, pred_request,
         pos = refer_data["Token"]["pos"]
         chunk = refer_data["Token"]["chunk"]
 
-        for i, (w, p, ch, tgt, pred) in enumerate(zip(words, pos, chunk,
-                                            refer_tag, pred_tag), 1):
+        for i, (word, position, chun, tgt, pred) in \
+                enumerate(zip(words, pos, chunk, refer_tag, pred_tag), 1):
             opened_file.write(
-                "%d %s %s %s %s %s\n" % (i, w, p, ch, tgt, pred)
+                "%d %s %s %s %s %s\n" % (i, word, position, chun, tgt, pred)
             )
         opened_file.write("\n")
     opened_file.close()
 
 
 class CoNLLNEREvaluator(Evaluator):
+    """Evaluator for Conll NER task."""
     def __init__(self):
         super().__init__()
         # self.test_component = CoNLLNERPredictor().name
@@ -64,7 +67,7 @@ class CoNLLNEREvaluator(Evaluator):
         self.score_file = "tmp_eval.score"
         self.scores = {}
 
-    def consume_next(self, pred_pack: DataPack, refer_pack: DataPack):
+    def consume_next(self, pred_pack: PackType, ref_pack: PackType):
         pred_getdata_args = {
             "context_type": Sentence,
             "request": {
@@ -93,7 +96,7 @@ class CoNLLNEREvaluator(Evaluator):
 
         _write_tokens_to_file(pred_pack=pred_pack,
                                 pred_request=pred_getdata_args,
-                                refer_pack=refer_pack,
+                                refer_pack=ref_pack,
                                 refer_request=refer_getdata_args,
                                 output_filename=self.output_file)
         eval_script = \
@@ -108,13 +111,13 @@ class CoNLLNEREvaluator(Evaluator):
             acc = float(fields[0].split(":")[1].strip()[:-1])
             precision = float(fields[1].split(":")[1].strip()[:-1])
             recall = float(fields[2].split(":")[1].strip()[:-1])
-            f1 = float(fields[3].split(":")[1].strip())
+            f_1 = float(fields[3].split(":")[1].strip())
 
         self.scores = {
             "accuracy": acc,
             "precision": precision,
             "recall": recall,
-            "f1": f1,
+            "f1": f_1,
         }
 
     def get_result(self):
