@@ -79,11 +79,14 @@ class Batcher:
         tensor_collection = {}
         for tag, features in example_collection.items():
             converter = self.feature_resource['schemes'][tag]["converter"]
-            tensor, mask = converter.convert(features)
+            need_pad = self.feature_resource['schemes'][tag]["need_pad"]
             if tag not in tensor_collection:
                 tensor_collection[tag] = {}
-            tensor_collection[tag]["tensor"] = tensor
-            tensor_collection[tag]["mask"] = mask
+            if need_pad:
+                tensor, mask = converter.convert(features)
+                tensor_collection[tag]["tensor"] = tensor
+                tensor_collection[tag]["mask"] = mask
+            tensor_collection[tag]["features"] = features
         return tensor_collection
 
     def yield_batch(self, pack: DataPack) -> Dict:
