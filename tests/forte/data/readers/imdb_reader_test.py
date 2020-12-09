@@ -88,7 +88,9 @@ class IMDBReaderTest(unittest.TestCase):
                 comment = actual_sentence.text
                 # Test comment.
                 self.assertEqual(comment,line)
-                self.assertEqual(actual_sentence.sentiment[comment], label)
+                self.assertEqual(actual_sentence.speaker, label)
+                #self.assertEqual(actual_sentence.__getattribute__("sentim"), label)
+
 
             for word_read, word_in_pack in zip(wordlist,actual_word):
                 new_word_read = word_read

@@ -17,7 +17,7 @@ from typing import Iterator, Dict, List
 import numpy as np
 import torch
 import torch.nn.functional as F
-from torch import nn
+import torch.nn as nn
 from torch.optim import SGD
 from torch.optim.optimizer import Optimizer
 from texar.torch.data import Batch
@@ -37,6 +37,9 @@ from forte.data.extractor.base_extractor \
 from forte.train_preprocessor import TrainPreprocessor
 from forte.data.readers.imdb_reader import IMDBReader
 from ft.onto.base_ontology import Sentence, Token
+from texar.torch.modules.classifiers.rnn_classifiers import\
+    UnidirectionalRNNClassifier
+from texar.torch.modules.embedders import WordEmbedder
 
 logger = logging.getLogger(__name__)
 
@@ -67,37 +70,6 @@ def construct_word_embedding_table(embed_dict, extractor: BaseExtractor):
         table[index, :] = embedding
     return torch.from_numpy(table)
 
-
-
-class MyConv(nn.Module):
-    def __init__(self, embmatrix):
-        super(MyConv, self).__init__()
-        self.embedding = nn.Embedding(*embmatrix.size())
-        self.embedding.weight.data.copy_(embmatrix)
-        self.embedding.weight.requires_grad = True
-
-        self.conv1 = nn.Conv1d(300, 100, 3)
-        self.conv2 = nn.Conv1d(300, 100, 4)
-        self.conv3 = nn.Conv1d(300, 100, 5)
-        self.pool1 = nn.MaxPool1d(58)
-        self.pool2 = nn.MaxPool1d(57)
-        self.pool3 = nn.MaxPool1d(56)
-        self.dropout = nn.Dropout(0.5)
-        self.fc1 = nn.Linear(300, 16)
-
-    def forward(self, x):  # for a sentence (300,60)
-        # x = x.permute(0, 2, 1)
-        x = self.embedding(x)
-        x = x.permute(0, 2, 1)
-        x1 = self.pool1(F.relu(self.conv1(x)))
-        x2 = self.pool2(F.relu(self.conv2(x)))
-        x3 = self.pool3(F.relu(self.conv3(x)))
-        x = torch.cat((x1, x2, x3), dim=1).squeeze()
-        x = self.dropout(x)
-        x = self.fc1(x)
-        x = F.relu(x)
-        return x
-
 def create_model(schemes: Dict[str, Dict[str, BaseExtractor]],
                  config: Config):
     text_extractor: BaseExtractor = schemes["text_tag"]["extractor"]
@@ -119,13 +91,15 @@ def create_model(schemes: Dict[str, Dict[str, BaseExtractor]],
     word_embedding_table = \
         construct_word_embedding_table(embedding_dict, text_extractor)
 
+    word_vec_dim = word_embedding_table.shape[1]
+
     model: nn.Module = \
-        MyConv(word_embedding_table)
+        UnidirectionalRNNClassifier(word_vec_dim)
 
-    return model
+    return model, word_embedding_table
 
 
-def train(model: nn.Module, optim: Optimizer, batch: Batch):
+def train(model: nn.Module, optim: Optimizer, batch: Batch, word_embedder: WordEmbedder):
     word = batch["text_tag"]["tensor"]
     labels = batch["label_tag"]["tensor"]
     print("word in train func: ", word)
@@ -134,9 +108,9 @@ def train(model: nn.Module, optim: Optimizer, batch: Batch):
     word = word.to(device)
     labels = labels.to(device)
 
-    outputs = model(word)
+    logits, pred = model(word_embedder(word))
 
-    loss = criterion(outputs, labels)
+    loss = criterion(pred, labels)
 
     loss.backward()
     optim.step()
@@ -175,14 +149,14 @@ tp_request = {
     "schemes": {
         "text_tag": {
             "entry_type": Token,
-            "get_attribute_fn": lambda x: x.text,
+            "attribute_get": "text",
             "vocab_method": "indexing",
             "type": DATA_INPUT,
             "extractor": AttributeExtractor
         },
         "label_tag": {
             "entry_type": Sentence,
-            "get_attribute_fn": lambda x: x.sentiment[x.text],
+            "attribute_get": "speaker",
             "vocab_method": "indexing",
             "type": DATA_OUTPUT,
             "extractor": AttributeExtractor
@@ -210,9 +184,20 @@ train_preprocessor = TrainPreprocessor(train_reader=imdb_train_reader,
                                        request=tp_request,
                                        config=tp_config)
 
-model: nn.Module = \
+# max_sen_length = 0
+# train_batch_iter: Iterator[Batch] = \
+#         train_preprocessor.get_train_batch_iterator()
+
+# for batch in tqdm(train_batch_iter):
+#     max_sen_length = (batch["text_tag"]["tensor"].shape[1], max_sen_length)
+
+
+model, word_embedding_table = \
     create_model(schemes=train_preprocessor.feature_resource["schemes"],
                  config=config)
+
+word_embedder = WordEmbedder(init_value=word_embedding_table)
+
 model.to(device)
 
 criterion = nn.CrossEntropyLoss()
@@ -256,7 +241,7 @@ while epoch < config.config_data.num_epochs:
     batchcount = 1 # Need remove later
     for batch in tqdm(train_batch_iter):
         print("batchcount", batchcount)
-        batch_train_err = train(model, optim, batch)
+        batch_train_err = train(model, optim, batch, word_embedder)
 
         train_err += batch_train_err
         train_total += batch.batch_size

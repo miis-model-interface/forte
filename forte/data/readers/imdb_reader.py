@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-The reader that reads QA-SRL Bank 2.0 data into data pack.
+The reader that reads IMDB data into data pack.
 Data Overview:
 https://www.kaggle.com/lakshmi25npathi/imdb-dataset-of-50k-movie-reviews
 Data Format:
@@ -49,7 +49,7 @@ class IMDBReader(PackReader):
 
         if configs.imdb_file_extension is None:
             raise ProcessorConfigError(
-                "Configuration qa_file_extension not provided.")
+                "Configuration imdb_file_extension not provided.")
 
     def _collect(self, *args, **kwargs) -> Iterator[str]:
         # pylint: disable = unused-argument
@@ -64,7 +64,8 @@ class IMDBReader(PackReader):
 
         imdb_directory: str = args[0]
 
-        imdb_file_extension: str = self.configs.imdb_file_extension
+        #imdb_file_extension: str = self.configs.imdb_file_extension
+        imdb_file_extension = "imdb"
 
         logging.info("Reading dataset from %s with extension %s",
                      imdb_directory, imdb_file_extension)
@@ -89,7 +90,9 @@ class IMDBReader(PackReader):
                     # Add sentence.
                     senobj = Sentence(pack, offset+1,
                                       offset + len(sentence)+1)
-                    senobj.sentiment[sentence] = sentiment
+                    #senobj.sentiment[sentence] = sentiment
+                    #senobj.__setattr__("sentim" , sentiment)
+                    senobj.speaker = sentiment
 
                     # Add token
                     wordoffset = offset+1
