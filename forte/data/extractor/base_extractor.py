@@ -14,12 +14,29 @@
 
 
 from abc import ABC
-from typing import Dict, Any, Union, Type, Callable
+from typing import Dict, Any, Union, Type
 from ft.onto.base_ontology import Annotation
 from forte.common.configuration import Config
 from forte.data.data_pack import DataPack
 from forte.data.vocabulary import Vocabulary
 from forte.data.converter.feature import Feature
+
+
+class WrapperClass:
+    def __init__(self):
+        self.obj = None
+        self.func_name = None
+
+    def __call__(self, obj, func_name):
+        self.obj = obj
+        self.func_name = func_name
+        return self.wrapper
+
+    def wrapper(self, *args, **kwargs):
+        assert self.obj, """When vocab_mehtod is raw,
+        vocabulary is not built and operation on vocabulary should not
+        be called."""
+        return getattr(self.obj, self.func_name)(*args, **kwargs)
 
 
 class BaseExtractor(ABC):
@@ -50,13 +67,18 @@ class BaseExtractor(ABC):
         else:
             self.vocab = None
 
-        self.items = self.wrap_vocab_fn("items")
-        self.size = self.wrap_vocab_fn("__len__")
-        self.add = self.wrap_vocab_fn("add")
-        self.has_key = self.wrap_vocab_fn("has_key")
-        self.id2element = self.wrap_vocab_fn("id2element")
-        self.element2repr = self.wrap_vocab_fn("element2repr")
-        self.get_dict = self.wrap_vocab_fn("get_dict")
+        wrap_vocab_fns = {
+            "items": "items",
+            "size": "__len__",
+            "add": "add",
+            "has_key": "has_key",
+            "id2element": "id2element",
+            "element2repr": "element2repr",
+            "get_dict": "get_dict",
+        }
+
+        for k, v in wrap_vocab_fns.items():
+            setattr(self, k, WrapperClass()(self.vocab, v))
 
     @property
     def entry_type(self) -> Type[Annotation]:
@@ -65,14 +87,6 @@ class BaseExtractor(ABC):
     @property
     def vocab_method(self) -> str:
         return self.config.vocab_method
-
-    def wrap_vocab_fn(self, func_name: str) -> Callable:
-        def wrapper(*args, **kwargs):
-            assert self.vocab, """When vocab_mehtod is raw,
-            vocabulary is not built and operation on vocabulary should not
-            be called."""
-            return getattr(self.vocab, func_name)(*args, **kwargs)
-        return wrapper
 
     def get_pad_id(self) -> int:
         '''PAD ID is always 0.'''
