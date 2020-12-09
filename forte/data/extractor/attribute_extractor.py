@@ -80,8 +80,8 @@ class AttributeExtractor(BaseExtractor):
                                             "allowed to be set."
         instance_entry = list(pack.get(self.config.entry_type, instance))
         prediction = prediction[:len(instance_entry)]
-        attrs = [self.id2element(x) if isinstance(x, int)
-                    else x for x in prediction]
+        # TODO: we make some assumption here. The prediction is id.
+        attrs = [self.id2element(int(x)) for x in prediction]
         for entry, attr in zip(instance_entry, attrs):
             if callable(self.attribute_set):
                 self.attribute_set(entry, attr)
