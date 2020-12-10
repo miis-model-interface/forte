@@ -11,8 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+user_request = {
+    "vocab method":         "raw",         "indexing",     "indexing",          "one-hot",                          "one-hot"
+    "do_padding":         assume False,        True,        False,                 True,                              False
+}
 
+vocab behavior
+    get_pad_id:              None,             0,             None,               [0,0,0]                              None
+    inner_dict               None,         0:pad, 1:ele0      0:ele0         -1:<PAD>   0:ele0                         0:ele0
+    repr2elment           raise Error,     0->pad, 1->ele0    0->ele0,     [0,0,0]-><PAD> [1,0,0]->ele0             [1,0,0]->ele0 
+    id2elemnt             raise Error      0->pad, 1->ele0    0->ele0,    -1 -> <PAD> 0->ele0 (be careful)             0->ele0
 
+feature behavior:        return List    retrun padded tensor  return List     retrun padded tensor                  return List
+"""
 from typing import List, Tuple, Dict, Union, Hashable, Iterable
 
 
@@ -22,11 +34,18 @@ class Vocabulary:
     representations, namely, "indexing" and "one-hot". There
     are two special types of element, namely PAD_ELEMENT
     and UNK_ELEMENT.
-    For "indexing" vocabulary,
+
+    For "indexing" vocabulary, do_padding = True
         Element:  <PAD>  ele1   ele2   ele3  ...
         Id:         0      1      2      3   ...
         Repr:       0      1      2      3   ...
-    For "one-hot" vocabulary,
+
+    For "indexing" vocabulary, do_padding = False
+        Element:  ele1   ele2   ele3    ele3 ...
+        Id:         0      1      2      3   ...
+        Repr:       0      1      2      3   ...
+
+    For "one-hot" vocabulary,  add_pad = True
         Element:  <PAD>  ele1   ele2   ele3  ...
         Id:        -1      0      1      2   ...
         Repr:      [0,    [1,    [0,    [0,  ...
@@ -34,6 +53,16 @@ class Vocabulary:
                     0,     0,     0,     1,  ...
                     0,     0,     0,     0,  ...
                     ...]   ...]   ...]   ...]
+
+    For "one-hot" vocabulary,  add_pad = False
+        Element:  ele1   ele2   ele3  ...
+        Id:         0      1      2   ...
+        Repr:      [1,    [0,    [0,  ...
+                    0,     1,     0,  ...
+                    0,     0,     1,  ...
+                    0,     0,     0,  ...
+                    ...]   ...]   ...]
+    
     If vocabulary uses UNK_ELEMENT, the first element,
     "ele1" will be UNK_ELEMENT and any other elements
     that cannot be found in the current vocabulary will
