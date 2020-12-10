@@ -14,14 +14,14 @@
 """
 user_request = {
     "vocab method":         "raw",         "indexing",     "indexing",          "one-hot",                          "one-hot"
-    "do_padding":         assume False,        True,        False,                 True,                              False
+    "need_pad":           assume False,        True,         False,                True,                              False
 }
 
 vocab behavior
-    get_pad_id:              None,             0,             None,               [0,0,0]                              None
-    inner_dict               None,         0:pad, 1:ele0      0:ele0         -1:<PAD>   0:ele0                         0:ele0
-    repr2elment           raise Error,     0->pad, 1->ele0    0->ele0,     [0,0,0]-><PAD> [1,0,0]->ele0             [1,0,0]->ele0 
-    id2elemnt             raise Error      0->pad, 1->ele0    0->ele0,    -1 -> <PAD> 0->ele0 (be careful)             0->ele0
+    get_pad_value:           None,             0,              None,               [0,0,0]                              None
+    inner_dict               None,         0:pad, 1:ele0       0:ele0         -1:<PAD>   0:ele0                        0:ele0
+    repr2element           raise Error,     0->pad, 1->ele0    0->ele0,     [0,0,0]-><PAD> [1,0,0]->ele0           [1,0,0]->ele0
+    id2element             raise Error      0->pad, 1->ele0    0->ele0,    -1 -> <PAD> 0->ele0 (be careful)           0->ele0
 
 feature behavior:        return List    retrun padded tensor  return List     retrun padded tensor                  return List
 """
