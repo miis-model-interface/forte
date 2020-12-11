@@ -59,7 +59,7 @@ class CharExtractorTest(unittest.TestCase):
 
             for feat in features:
                 recovered = [[extractor.id2element(idx) for idx in sent]
-                                                for sent in feat.unroll()[0]]
+                                                for sent in feat.data[0]]
 
                 recovered = ["".join(chars) for chars in recovered]
                 recovered = " ".join(recovered)

@@ -37,7 +37,7 @@ def predict_forward_fn(model, batch):
 
     text: List[List[str]] = []
     for feature in raw_text_features:
-        text.append(feature.unroll()[0])
+        text.append(feature.data[0])
 
     output = model.decode(text=text,
                           char_batch=char_tensor,
