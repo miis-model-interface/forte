@@ -14,6 +14,7 @@
 
 
 from typing import Dict, Any, Union, Iterable
+from collections import abc
 from ft.onto.base_ontology import Annotation
 from forte.common.configuration import Config
 from forte.data.data_pack import DataPack
@@ -80,8 +81,8 @@ class AttributeExtractor(BaseExtractor):
                                             "allowed to be set."
         instance_entry = list(pack.get(self.config.entry_type, instance))
         #TODO: extracted feature dim should be consisted with the dimension
-        #here. When dim=1, prediction is a list, dim=0, prediction is a single element.
-        if len(prediction) > 1:
+        #here. When dim=1, prediction is a list/array, dim=0, prediction is a single element.
+        if isinstance(prediction, abc.Iterable):
             prediction = prediction[:len(instance_entry)]
         # TODO: we make some assumption here. The prediction is id.
         attrs = [self.id2element(int(x)) for x in prediction]
