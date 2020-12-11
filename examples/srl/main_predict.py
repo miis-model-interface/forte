@@ -29,9 +29,9 @@ saved_model = torch.load("model.pt")
 def predict_forward_fn(model, batch):
     '''Predict function.'''
     char_tensor: Tensor = batch["char_tag"]["tensor"]
-    char_masks: List[Tensor] = batch["char_tag"]["mask"]
+    char_masks: List[Tensor] = batch["char_tag"]["masks"]
     text_tensor: Tensor = batch["text_tag"]["tensor"]
-    text_mask: Tensor = batch["text_tag"]["mask"][0]
+    text_mask: Tensor = batch["text_tag"]["masks"][0]
     raw_text_features: List[Feature] = batch["raw_text_tag"]["features"]
     srl_features: List[Feature] = [None] * len(raw_text_features)
 
