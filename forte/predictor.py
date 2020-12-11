@@ -16,7 +16,7 @@
 from typing import Dict, List, Callable
 import itertools
 from torch.nn import Module
-from forte.data.types import DATA_INPUT
+from forte.train_preprocessor import TrainPreprocessor
 from forte.data.data_pack import DataPack
 from forte.data.ontology import Annotation
 from forte.processors.base.base_processor import BaseProcessor
@@ -93,7 +93,7 @@ class Batcher:
         for instance in pack.get(self.feature_resource['scope']):
             feature_collection = {}
             for tag, scheme in self.feature_resource['schemes'].items():
-                if scheme['type'] == DATA_INPUT:
+                if scheme['type'] == TrainPreprocessor.DATA_INPUT:
                     extractor = scheme["extractor"]
                     feature = extractor.extract(pack, instance)
                     feature_collection[tag] = feature

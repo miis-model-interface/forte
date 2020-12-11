@@ -79,7 +79,10 @@ class AttributeExtractor(BaseExtractor):
         assert self.attribute_set != "text", "Text attribute is not"\
                                             "allowed to be set."
         instance_entry = list(pack.get(self.config.entry_type, instance))
-        prediction = prediction[:len(instance_entry)]
+        #TODO: extracted feature dim should be consisted with the dimension
+        #here. When dim=1, prediction is a list, dim=0, prediction is a single element.
+        if len(prediction) > 1:
+            prediction = prediction[:len(instance_entry)]
         # TODO: we make some assumption here. The prediction is id.
         attrs = [self.id2element(int(x)) for x in prediction]
         for entry, attr in zip(instance_entry, attrs):
