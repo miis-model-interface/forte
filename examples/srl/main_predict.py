@@ -45,7 +45,6 @@ def predict_forward_fn(model, batch):
                           text_batch=text_tensor,
                           text_mask=text_mask,
                           srl_features=srl_features)
-    print(output)
     return {"pred_link_tag": output}
 
 
