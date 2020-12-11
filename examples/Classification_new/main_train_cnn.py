@@ -27,8 +27,7 @@ import yaml
 from examples.ner_new.ner_evaluator import CoNLLNEREvaluator
 from forte.models.ner.model_factory import BiRecurrentConvCRF
 from forte.pipeline import Pipeline
-from forte.predictor import Predictor
-from forte.data.types import DATA_INPUT, DATA_OUTPUT
+#from forte.predictor import Predictor
 from forte.common.configuration import Config
 from forte.data.extractor.attribute_extractor \
     import AttributeExtractor
@@ -165,14 +164,14 @@ tp_request = {
             "entry_type": Token,
             "attribute_get": "text",
             "vocab_method": "indexing",
-            "type": DATA_INPUT,
+            "type": TrainPreprocessor.DATA_INPUT,
             "extractor": AttributeExtractor
         },
         "label_tag": {
             "entry_type": Sentence,
             "attribute_get": "speaker",
             "vocab_method": "indexing",
-            "type": DATA_OUTPUT,
+            "type": TrainPreprocessor.DATA_OUTPUT,
             "extractor": AttributeExtractor
         }
     }
