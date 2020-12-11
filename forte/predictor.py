@@ -83,9 +83,9 @@ class Batcher:
             if tag not in tensor_collection:
                 tensor_collection[tag] = {}
             if need_pad:
-                tensor, mask = converter.convert(features)
+                tensor, masks = converter.convert(features)
                 tensor_collection[tag]["tensor"] = tensor
-                tensor_collection[tag]["mask"] = mask
+                tensor_collection[tag]["masks"] = masks
             tensor_collection[tag]["features"] = features
         return tensor_collection
 

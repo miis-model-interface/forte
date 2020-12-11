@@ -26,7 +26,7 @@ def predict_forward_fn(model, batch):
     '''Use model and batch data to predict ner tag.'''
     word = batch["text_tag"]["tensor"]
     char = batch["char_tag"]["tensor"]
-    word_masks = batch["text_tag"]["mask"][0]
+    word_masks = batch["text_tag"]["masks"][0]
     output = model.decode(input_word=word, input_char=char, mask=word_masks)
     output = output.numpy()
     return {'ner_tag': output}
