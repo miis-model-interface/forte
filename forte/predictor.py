@@ -79,13 +79,11 @@ class Batcher:
         tensor_collection = {}
         for tag, features in example_collection.items():
             converter = self.feature_resource['schemes'][tag]["converter"]
-            need_pad = self.feature_resource['schemes'][tag]["need_pad"]
             if tag not in tensor_collection:
                 tensor_collection[tag] = {}
-            if need_pad:
-                tensor, masks = converter.convert(features)
-                tensor_collection[tag]["tensor"] = tensor
-                tensor_collection[tag]["masks"] = masks
+            tensor, masks = converter.convert(features)
+            tensor_collection[tag]["data"] = tensor
+            tensor_collection[tag]["masks"] = masks
             tensor_collection[tag]["features"] = features
         return tensor_collection
 
