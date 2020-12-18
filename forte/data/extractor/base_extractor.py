@@ -45,14 +45,13 @@ class BaseExtractor(ABC):
         defaults = {
             "vocab_method": "indexing",
             "vocab_use_unk": True,
+            "need_pad": True,
         }
 
         self.config = Config(config, defaults, allow_new_hparam=True)
 
         assert hasattr(self.config, "entry_type"), \
             "entry_type is required."
-        assert hasattr(self.config, "need_pad"), \
-            "need_pad is required."
 
         if self.config.vocab_method != "raw":
             self.vocab = Vocabulary(method=self.config.vocab_method,
