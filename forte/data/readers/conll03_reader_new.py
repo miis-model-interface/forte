@@ -82,13 +82,13 @@ class CoNLL03Reader(PackReader):
                 yield pack
 
                 # Create a new datapack.
-                pack: DataPack = DataPack()
-                text: str = ""
-                offset: int = 0
-                has_rows: bool = False
+                pack = DataPack()
+                text = ""
+                offset = 0
+                has_rows = False
 
-                sentence_begin: int = 0
-                sentence_cnt: int = 0
+                sentence_begin = 0
+                sentence_cnt = 0
 
                 prev_y = None
                 prev_x = None
