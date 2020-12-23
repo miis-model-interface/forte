@@ -21,6 +21,11 @@ from forte.data.data_pack import DataPack
 from forte.data.vocabulary import Vocabulary
 from forte.data.converter.feature import Feature
 
+logger = logging.getLogger(__name__)
+
+__all__ = [
+    "BaseExtractor"
+]
 
 class BaseExtractor(ABC):
     """The functionalities of this class are
@@ -42,16 +47,12 @@ class BaseExtractor(ABC):
                 default is True.
     """
     def __init__(self, config: Union[Dict, Config]):
-        defaults = {
-            "vocab_method": "indexing",
-            "vocab_use_unk": True,
-            "need_pad": True,
-        }
 
-        self.config = Config(config, defaults, allow_new_hparam=True)
+        self.config = Config(config, self.default_configs, allow_new_hparam=True)
 
-        assert hasattr(self.config, "entry_type"), \
-            "entry_type is required."
+        if not hasattr(self.config, "entry_type"):
+            logger.error("entry_type is required.")
+            raise AttributeError("entry_type is required.")
 
         if self.config.vocab_method != "raw":
             self.vocab = Vocabulary(method=self.config.vocab_method,
@@ -59,6 +60,37 @@ class BaseExtractor(ABC):
                                     use_unk=self.config.vocab_use_unk)
         else:
             self.vocab = None
+
+    @staticmethod
+    self.default_configs():
+        return {
+            "vocab_method": "indexing",
+            "vocab_use_unk": True,
+            "need_pad": True,
+        }
+
+    @property
+    def state(self) -> Dict:
+        return {
+            "vocab_method": self.config.vocab_method,
+            "need_pad": self.config.need_pad,
+            "vocab_use_unk": self.config.vocab_use_unk,
+            "entry_type": self.config.entry_type,
+            "vocab": self.vocab.state if self.vocab else None,
+        }
+    
+    @classmethod
+    def from_state(cls, state: Dict) -> BaseExtractor:
+        config = {
+            "vocab_method": state["vocab_method"],
+            "need_pad": state["need_pad"],
+            "vocab_use_unk": state["vocab_use_unk"],
+            "entry_type": state["entry_type"]
+        }
+        obj = cls(config)
+        if "vocab" in state and state["vocab"] is not None:
+            obj.vocab = Vocabulary.from_state(state["vocab"])
+        return obj
 
     @property
     def entry_type(self) -> Type[Annotation]:
@@ -75,9 +107,12 @@ class BaseExtractor(ABC):
             return self.vocab.get_pad_value()
 
     def check_vocab(self):
-        assert self.vocab, """When vocab_mehtod is raw,
-        vocabulary is not built and operation on vocabulary should not
-        be called."""
+        if not self.vocab:
+            logger.error("When vocab_mehtod is raw, " \
+                        "vocabulary is not built and " \
+                        "operation on vocabulary should not" \
+                        "be called.")
+            raise AttributeError("Vocabulary does not exist.")
 
     def items(self) -> Iterable[Tuple[Hashable, int]]:
         self.check_vocab()
