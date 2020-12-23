@@ -123,7 +123,7 @@ class Vocabulary:
             "id2element_dict": self.id2element_dict,
             "next_id": self.next_id
         }
-    
+
     @classmethod
     def from_state(cls, state: Dict):
         obj = cls(state["method"], state["need_pad"], state["use_unk"])
@@ -131,7 +131,7 @@ class Vocabulary:
         obj.id2element_dict = state["id2element_dict"]
         obj.next_id = state["next_id"]
         return obj
-    
+
     def add_element(self, element: Hashable):
         r"""This function will add element to the vocabulary.
 

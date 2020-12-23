@@ -104,5 +104,6 @@ class VocabularyTest(unittest.TestCase):
             self.assertEqual(vocab.id2element_dict, new_vocab.id2element_dict)
             self.assertEqual(vocab.next_id, new_vocab.next_id)
 
+
 if __name__ == '__main__':
     unittest.main()

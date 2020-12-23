@@ -14,6 +14,7 @@
 
 
 from abc import ABC
+import logging
 from typing import Tuple, List, Dict, Any, Union, Type, Hashable, Iterable
 from ft.onto.base_ontology import Annotation
 from forte.common.configuration import Config
@@ -48,7 +49,7 @@ class BaseExtractor(ABC):
     """
     def __init__(self, config: Union[Dict, Config]):
 
-        self.config = Config(config, self.default_configs, allow_new_hparam=True)
+        self.config = Config(config, self.default_configs(), allow_new_hparam=True)
 
         if not hasattr(self.config, "entry_type"):
             logger.error("entry_type is required.")
@@ -62,7 +63,7 @@ class BaseExtractor(ABC):
             self.vocab = None
 
     @staticmethod
-    self.default_configs():
+    def default_configs():
         return {
             "vocab_method": "indexing",
             "vocab_use_unk": True,
@@ -80,7 +81,7 @@ class BaseExtractor(ABC):
         }
     
     @classmethod
-    def from_state(cls, state: Dict) -> BaseExtractor:
+    def from_state(cls, state: Dict):
         config = {
             "vocab_method": state["vocab_method"],
             "need_pad": state["need_pad"],
