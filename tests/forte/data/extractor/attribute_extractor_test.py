@@ -15,7 +15,7 @@ import unittest
 
 from ft.onto.base_ontology import Sentence, Token
 from forte.pipeline import Pipeline
-from forte.data.readers.conll03_reader_new import CoNLL03Reader
+from forte.data.readers.conll03_reader import CoNLL03Reader
 from forte.data.data_pack import DataPack
 from forte.data.extractor.attribute_extractor import AttributeExtractor
 
@@ -24,7 +24,7 @@ class AttributeExtractorTest(unittest.TestCase):
 
     def setUp(self):
         # Define and config the Pipeline
-        self.dataset_path = "data_samples/conll03_new"
+        self.dataset_path = "data_samples/conll03"
 
     def test_AttributeExtractor(self):
         pipeline = Pipeline[DataPack]()
@@ -32,61 +32,60 @@ class AttributeExtractorTest(unittest.TestCase):
         pipeline.set_reader(reader)
         pipeline.initialize()
 
-        config1 = {
+        config = {
             "scope": Sentence,
             "need_pad": True,
             "entry_type": Token,
-            "attribute_get": "text",
+            "attribute": "text",
         }
 
-        config2 = {
-            "scope": Sentence,
-            "need_pad": True,
-            "entry_type": Token,
-            "attribute_get": "text",
-            # This must be a field that could be set.
-            "attribute_set": "chunk"
-        }
+        extractor = AttributeExtractor(config)
 
-        config3 = {
-            "scope": Sentence,
-            "need_pad": True,
-            "entry_type": Token,
-            "attribute_get": lambda x: x.text,
-            "attribute_set": "chunk"
-        }
+        sentence = "The European Commission said on Thursday it disagreed "\
+                    "with German advice to consumers to shun British lamb "\
+                    "until scientists determine whether mad cow disease "\
+                    "can be transmitted to sheep ."
 
-        config4 = {
-            "scope": Sentence,
-            "need_pad": True,
-            "entry_type": Token,
-            "attribute_get": lambda x: x.text,
-            "attribute_set": lambda x, value:
-                setattr(x, "chunk", value)
-        }
+        # Check update_vocab.
+        for pack in pipeline.process_dataset(self.dataset_path):
+            for instance in pack.get(Sentence):
+                extractor.update_vocab(pack, instance)
 
-        for config in [config1, config2, config3, config4]:
-            extractor = AttributeExtractor(config)
+        # Check extract
+        for pack in pipeline.process_dataset(self.dataset_path):
+            features = []
+            for instance in pack.get(Sentence):
+                features.append(extractor.extract(pack, instance))
 
-            sentence = "The European Commission said on Thursday it disagreed "\
-                        "with German advice to consumers to shun British lamb "\
-                        "until scientists determine whether mad cow disease "\
-                        "can be transmitted to sheep ."
+            for feat in features:
+                recovered = [extractor.id2element(idx) for idx in feat.data[0]]
+                self.assertEqual(" ".join(recovered), sentence)
 
-            for pack in pipeline.process_dataset(self.dataset_path):
-                for instance in pack.get(Sentence):
-                    extractor.update_vocab(pack, instance)
+        # Check add_to_pack and remove_from_pack.
+        # Vocab_mathod is indexing, therefore the id of element
+        # is the same as repr.
+        extractor.config.attribute = "pos"
+        extractor.add("TMP")
+        fake_pos_ids = [extractor.element2repr("TMP") for _ in
+                        range(len(sentence.split(" ")))]
+        # After remove_from_pack, the attribute value will become
+        # None. Since vocab_use_unk is true, None will be mapped
+        # to <UNK>.
+        unk_pos_ids = [extractor.element2repr(None) for _ in
+                        range(len(sentence.split(" ")))]
 
-            for pack in pipeline.process_dataset(self.dataset_path):
-                features = []
-                for instance in pack.get(Sentence):
-                    features.append(extractor.extract(pack, instance))
+        for pack in pipeline.process_dataset(self.dataset_path):
+            for instance in pack.get(Sentence):
+                extractor.add_to_pack(pack, instance, fake_pos_ids)
 
-                for feat in features:
-                    recovered = [extractor.id2element(idx) for idx in feat._data]
-                    self.assertEqual(" ".join(recovered), sentence)
-                    if extractor.attribute_set != "text":
-                        extractor.add_to_pack(pack, instance, feat._data)
+            for instance in pack.get(Sentence):
+                feat = extractor.extract(pack, instance)
+                self.assertEqual(feat.data[0], fake_pos_ids)
+
+            for instance in pack.get(Sentence):
+                extractor.remove_from_pack(pack, instance)
+                feat = extractor.extract(pack, instance)
+                self.assertEqual(feat.data[0], unk_pos_ids)
 
 
 if __name__ == '__main__':

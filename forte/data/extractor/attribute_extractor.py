@@ -12,105 +12,122 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+import logging
 from typing import Dict, Any, Union, Iterable
 from collections import abc
-from ft.onto.base_ontology import Annotation
+from ft.onto.base_ontology import Entry, Annotation
 from forte.common.configuration import Config
 from forte.data.data_pack import DataPack
 from forte.data.converter.feature import Feature
 from forte.data.extractor.base_extractor import BaseExtractor
 
+logger = logging.getLogger(__name__)
+
+__all__ = [
+    "AttributeExtractor"
+]
+
 
 class AttributeExtractor(BaseExtractor):
-    """AttributeExtractor will get feature from the attribute on entry.
+    r"""AttributeExtractor extracts feature from the attribute of entry.
+
     Args:
-        config:
-            Required keys:
-            "attribute_get": str or Callable. If str, the extracted
-                feature comes from calling `getattr(entry, attribute_get)`.
-                If Callable, the extracted feature comes from
-                `attribute_get(entry)`.
+        config: An instance of `Dict` or
+            :class:`forte.common.configuration.Config`
 
-            Optional keys:
-            "attribute_set": str or Callable. If str, the add_to_pack
-                function will call `setattr(entry, attribute_set, value)`.
-                If Callable, the add_to_pack function will call
-                `attribute_set(entry, value)`.
-
-                If this key is not provided and the key "attribute_get" is
-                a str type, "attribute_set" will be the same as "attribute_get".
-                Otherwise, this key must be provided.
+            attribute: str. Required. The attribute name of the
+                entry from which features will be extracted. For
+                example, "text" attribute of Token.
     """
     def __init__(self, config: Union[Dict, Config]):
         super().__init__(config)
 
-        assert hasattr(self.config, "attribute_get"), \
-            "attribute_get is required in AttributeExtractor."
+        if "attribute" not in self.config:
+            raise AttributeError("attribute needs to be specified in "
+                                "the configuration of an AttributeExtractor.")
 
-        self.attribute_get = self.config.attribute_get
+    @property
+    def state(self) -> Dict:
+        state = super().state
+        state.update({
+            "attribute": self.config.attribute
+        })
+        return state
 
-        if hasattr(self.config, "attribute_set"):
-            self.attribute_set = getattr(self.config, "attribute_set")
-        else:
-            if isinstance(self.attribute_get, str):
-                self.attribute_set = self.attribute_get
-            else:
-                raise AttributeError("Attribute_set need to be pass "
-                        "in when attribute_get is not a field of str type.")
+    @classmethod
+    def from_state(cls, state: Dict) -> "AttributeExtractor":
+        obj = super().from_state(state)
+        additional = {
+            "attribute": state["attribute"]
+        }
+        obj.config = Config(obj.config, additional,
+                            allow_new_hparam=True)
+        obj = cls(obj)
+        return obj
+
+    @staticmethod
+    def get_attribute(entry: Entry, attr: str) -> Any:
+        r"""Functionality: Get the attribute from entry. You can
+        overwrite this function if you have sepcial way to get the
+        attribute from entry.
+        """
+        return getattr(entry, attr)
+
+    @staticmethod
+    def set_attribute(entry: Entry, attr: str, value: Any):
+        r"""Functionality: Set the attribute of an entry to value.
+        You can overwrite this function if you have sepcial way to
+        set the attribute.
+        """
+        if attr == "text":
+            raise AttributeError("text attribute of entry cannot "
+                                "be changed.")
+        setattr(entry, attr, value)
 
     def update_vocab(self, pack: DataPack, instance: Annotation):
+        r"""Functionality: Get all attributes of one instance and
+        add them into the vocabulary.
+        """
         for entry in pack.get(self.config.entry_type, instance):
-            if callable(self.attribute_get):
-                self.add(self.attribute_get(entry))
-            else:
-                self.add(getattr(entry, self.attribute_get))
+            self.add(self.get_attribute(entry, self.config.attribute))
 
     def extract(self, pack: DataPack, instance: Annotation) -> Feature:
+        r"""Functionality: Extractor the attributes of one instance.
+        For example, the text of tokens in one sentence.
+        """
         data = []
         for entry in pack.get(self.config.entry_type, instance):
-            if callable(self.attribute_get):
-                attr = self.attribute_get(entry)
-            else:
-                attr = getattr(entry, self.attribute_get)
-            if self.vocab:
-                rep = self.element2repr(attr)
-            else:
-                rep = attr
+            value = self.get_attribute(entry, self.config.attribute)
+            rep = self.element2repr(value) if self.vocab else value
             data.append(rep)
-        # Data only has one dimension, therefore dim is 1.
+
         meta_data = {"pad_value": self.get_pad_value(),
                      "dim": 1,
                      "dtype": int if self.vocab else Any}
+
         return Feature(data=data,
                        metadata=meta_data,
                        vocab=self.vocab)
 
+    def remove_from_pack(self, pack: DataPack, instance: Annotation):
+        r"""Funcationality: Remove attributes of one instance. For
+        example remove all pos tags of tokens in one sentence, if the
+        entry_type is Token and the attribute is pos.
+        """
+        for entry in pack.get(self.config.entry_type, instance):
+            self.set_attribute(entry, self.config.attribute, None)
+
     def add_to_pack(self, pack: DataPack, instance: Annotation,
                     prediction: Iterable[Union[int, Any]]):
-        """We make following assumptions for prediction.
-        1. Prediction is not one-hot vector and we should
-           use Vocabulary.id2element to map it back to the
-           element we want to use for setting the attribute.
-        2. If prediction is an interger, it means there is
-           only one entry for an instance, and its attribute
-           is specified by this prediction.
-        3. If prediction is an iterable value (e.g. List, Array),
-           we will truncate it according to the number of entry.
-           If the prediction contains <PAD> element, this should remove them.
-        """
-        assert self.attribute_set != "text", "Text attribute is not"\
-                                            "allowed to be set."
+        r"""Functionality: Add the prediction for attribute to the
+        instance. If the prediction is an iterable object, we assume
+        each of the element in prediction will correspond to one entry.
+        If the prediction is only one element, then we assume there will
+        only be one entry in the instance."""
         instance_entry = list(pack.get(self.config.entry_type, instance))
 
-        if isinstance(prediction, abc.Iterable):
-            prediction = prediction[:len(instance_entry)]
-        else:
-            assert len(instance_entry) == 1
+        if not isinstance(prediction, abc.Iterable):
             prediction = [prediction]
-        attrs = [self.id2element(int(x)) for x in prediction]
-        for entry, attr in zip(instance_entry, attrs):
-            if callable(self.attribute_set):
-                self.attribute_set(entry, attr)
-            else:
-                setattr(entry, self.attribute_set, attr)
+        values = [self.id2element(int(x)) for x in prediction]
+        for entry, value in zip(instance_entry, values):
+            self.set_attribute(entry, self.config.attribute, value)
