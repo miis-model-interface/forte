@@ -11,12 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+This file implements AttributeExtractor, which is used to extract feature
+from the attribute of entries.
+"""
 import logging
 from collections import Hashable, abc
-from typing import Dict, Any, Union, Iterable
+from typing import Any, Union, Iterable
 from ft.onto.base_ontology import Entry, Annotation
-from forte.common.configuration import Config
 from forte.data.data_pack import DataPack
 from forte.data.converter.feature import Feature
 from forte.data.extractor.base_extractor import BaseExtractor
@@ -39,17 +41,20 @@ class AttributeExtractor(BaseExtractor):
                 entry from which features will be extracted. For
                 example, "text" attribute of Token.
     """
-    def __init__(self, config: Union[Dict, Config]):
-        super().__init__(config)
+    @classmethod
+    def default_configs(cls):
+        r"""Returns a dictionary of default hyper-parameters.
 
-        if "attribute" not in self.config:
-            raise AttributeError("attribute needs to be specified in "
-                                "the configuration of an AttributeExtractor.")
+        "attribute": str
+            The name of attribute we want to extract from the entry.
+        """
+        config = super().default_configs()
+        config.update({"attribute": "text"})
+        return config
 
-    @staticmethod
-    def get_attribute(entry: Entry, attr: str) -> Any:
+    def get_attribute(self, entry: Entry, attr: str) -> Any:
         r"""Get the attribute from entry. You can
-        overwrite this function if you have sepcial way to get the
+        overwrite this function if you have special way to get the
         attribute from entry.
 
         Args:
@@ -62,10 +67,9 @@ class AttributeExtractor(BaseExtractor):
         """
         return getattr(entry, attr)
 
-    @staticmethod
-    def set_attribute(entry: Entry, attr: str, value: Any):
+    def set_attribute(self, entry: Entry, attr: str, value: Any):
         r"""Set the attribute of an entry to value.
-        You can overwrite this function if you have sepcial way to
+        You can overwrite this function if you have special way to
         set the attribute.
 
         Args:
@@ -128,11 +132,10 @@ class AttributeExtractor(BaseExtractor):
                        vocab=self.vocab)
 
     def pre_evaluation_action(self, pack: DataPack, instance: Annotation):
-        r"""Remove attributes of one instance. For
-        example remove all pos tags of tokens in one sentence, if the
-        entry_type is Token and the attribute is pos.  This function is
-        called before the evaluation on a pack. After features are removed,
-        new features predicted from the model will be added to the pack.
+        r"""This function is performed on the pack before the evaluation
+        stage, allowing one to perform some actions before the evaluation.
+        By default, this function will remove the attribute. You can
+        overwrite this function by yourself.
 
         Args:
             pack (Datapack): The datapack that contains the current

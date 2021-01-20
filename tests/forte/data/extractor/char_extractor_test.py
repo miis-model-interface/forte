@@ -15,7 +15,7 @@ import unittest
 
 from ft.onto.base_ontology import Sentence, Token, EntityMention
 from forte.pipeline import Pipeline
-from forte.data.readers.conll03_reader_new import CoNLL03Reader
+from forte.data.readers.conll03_reader import CoNLL03Reader
 from forte.data.data_pack import DataPack
 from forte.data.extractor.char_extractor import CharExtractor
 
@@ -24,7 +24,7 @@ class CharExtractorTest(unittest.TestCase):
 
     def setUp(self):
         # Define and config the Pipeline
-        self.dataset_path = "data_samples/conll03_new"
+        self.dataset_path = "data_samples/conll03"
 
     def test_CharExtractor(self):
         pipeline = Pipeline[DataPack]()
@@ -33,15 +33,15 @@ class CharExtractorTest(unittest.TestCase):
         pipeline.initialize()
 
         config1 = {
-            "scope": Sentence,
             "entry_type": Token,
             "need_pad": True,
+            "vocab_use_unk": True,
         }
 
         config2 = {
-            "scope": Sentence,
             "entry_type": Token,
             "need_pad": True,
+            "vocab_use_unk": True,
             "max_char_length": 4
         }
 
