@@ -229,6 +229,11 @@ DataPack Dataset
 .. autoclass:: forte.data.extractor.char_extractor.CharExtractor
     :members:
 
+:hidden:`BioSeqTaggingExtractor`
+-----------------------------------
+.. autoclass:: forte.data.extractor.seqtagging_extractor.BioSeqTaggingExtractor
+    :members:
+
 Batchers
 ==========
 

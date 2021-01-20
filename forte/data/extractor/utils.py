@@ -11,66 +11,86 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+This file contains utility functions for extractors.
+"""
 
-
-from typing import List, Tuple
+from typing import Type, List, Tuple, Union, Callable, Optional
+from forte.data.data_pack import DataPack
 from ft.onto.base_ontology import Annotation
 
 
-def bio_tagging(instance_based_on: List[Annotation],
-                instance_entry: List[Annotation]) \
-                -> List[Tuple[Annotation, str]]:
-    """This utility function use BIO tagging method to convert labels
-    of "instance_entry" into the same length as "instance_based_on". Both
-    element from "instance_entry" and "instance_based_on" will have begin
-    and end field. This function uses these position information to
-    determine B, I, O tagging for the entry on each based_on element.
+def bio_tagging(pack: DataPack, instance: Annotation,
+    tagging_unit_type: Type[Annotation], entry_type: Type[Annotation],
+    attribute: Union[Callable[[Annotation], str], str]) \
+        -> List[Tuple[Optional[str], str]]:
+    """This utility function use BIO tagging method to convert tags
+    of "instance_entry" into the same length as "instance_tagging_unit". Both
+    element from "instance_entry" and "instance_tagging_unit" should Annotation
+    type. This function uses their position information to
+    determine B, I, O tagging for the entry on each tagging_unit element.
 
-    For example:
     Args:
-        instance_base_on: A [B C] D E [F] G
-        instance_entry:     entry1   entry2
-    Return:
-        [[None, "O"], [entry1, "B"], [entry1, "I"], [None, "O"],
-         [None, "O"], [entry2, "B"], [None, "O"]]
+        pack (Datapack): The datapack that contains the current
+            instance.
+
+        instance (Annotation): The instance from which the
+            extractor will extractor feature. For example, an instance of
+            Sentence type, which mean the tagging sequence comes from
+            one sentence.
+
+        tagging_unit_type (Annotation): The type of tagging unit that entry
+            tag should align to. For example, it can be Token, which means
+            returned tags should aligned to tokens in one sentence.
+
+        entry_type (Annotation): The type of entry that contains tags. For
+            example, it can be EntityMethion, which means tags comes from the
+            EntityMention of one sentence. Note that the number of EntityMention
+            can be different from the number of Token. That is why we need to
+            use BIO tagging to aglin them.
+
+        attribute (Union[Callable[[Annotation], str], str]): A function to
+            get the tags via the attribute of an entry. Or a str of the name
+            of the attribute. For example, it can be "ner_type", which means
+            the attribute ner_type of the entry will be treated as tags.
+    Returns:
+        A list of the type List[Tuple[Optional[str], str]]. For example,
+        [(None, "O"), (LOC, "B"), (LOC, "I"), (None, "O"),
+         (None, "O"), (PER, "B"), (None, "O")]
     """
-    tagged = []
-    cur_entry_id = 0
-    prev_entry_id = None
-    cur_based_on_id = 0
+    instance_tagging_unit: List[Annotation] = \
+        list(pack.get(tagging_unit_type, instance))
+    instance_entry: List[Annotation] = \
+        list(pack.get(entry_type, instance))
 
-    while cur_based_on_id < len(instance_based_on):
-        base_begin = instance_based_on[cur_based_on_id].begin
-        base_end = instance_based_on[cur_based_on_id].end
+    tagged: List[Tuple[Optional[str], str]] = []
+    unit_id = 0
+    entry_id = 0
+    while unit_id < len(instance_tagging_unit) or \
+        entry_id < len(instance_entry):
 
-        if cur_entry_id < len(instance_entry):
-            entry_begin = instance_entry[cur_entry_id].begin
-            entry_end = instance_entry[cur_entry_id].end
-        else:
-            lastone = len(instance_based_on) - 1
-            entry_begin = instance_based_on[lastone].end + 1
-            entry_end = instance_based_on[lastone].end + 1
+        if entry_id == len(instance_entry):
+            tagged.append((None, 'O'))
+            unit_id += 1
+            continue
 
-        if base_end < entry_begin:
-            # Base: [...]
-            # Entry       [....]
-            tagged.append((None, "O"))
-            prev_entry_id = None
-            cur_based_on_id += 1
-        elif base_begin >= entry_begin and base_end <= entry_end:
-            # Base:    [...]
-            # Entry:  [.......]
-            if prev_entry_id == cur_entry_id:
-                tagged.append((instance_entry[cur_entry_id], "I"))
+        is_start = True
+        for unit in pack.get(tagging_unit_type, instance_entry[entry_id]):
+            while instance_tagging_unit[unit_id] != unit:
+                tagged.append((None, 'O'))
+                unit_id += 1
+
+            if is_start:
+                location = 'B'
+                is_start = False
             else:
-                tagged.append((instance_entry[cur_entry_id], "B"))
-            prev_entry_id = cur_entry_id
-            cur_based_on_id += 1
-        elif base_begin > entry_end:
-            # Base:         [...]
-            # Entry: [....]
-            cur_entry_id += 1
-        else:
-            raise AssertionError("Unconsidered case. The entry is \
-                        within the span of based-on entry.")
+                location = 'I'
+
+            unit_id += 1
+            if callable(attribute):
+                tagged.append((attribute(instance_entry[entry_id]), location))
+            else:
+                tagged.append((getattr(instance_entry[entry_id], attribute),
+                                location))
+        entry_id += 1
     return tagged
