@@ -13,6 +13,6 @@
 # limitations under the License.
 
 from forte.data.extractor.base_extractor import *
-from forte.data.extractor.attribute_extrac·tor import *
+from forte.data.extractor.attribute_extractor import *
 from forte.data.extractor.char_extractor import *
 from forte.data.extractor.seqtagging_extractor import *
