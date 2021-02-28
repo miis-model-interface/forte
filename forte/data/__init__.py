@@ -12,5 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from forte.data.datasets import *
 from forte.data.data_utils_io import *
